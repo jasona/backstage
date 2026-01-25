@@ -12,8 +12,9 @@ import type {
   PlaybackState,
 } from '@/types/sonos';
 
-// Base URL from environment variable
-const API_BASE_URL = process.env.NEXT_PUBLIC_SONOS_API_URL || 'http://localhost:5005';
+// Use the proxy route to avoid CORS and localhost issues when accessing from other machines
+// The proxy forwards requests to the actual node-sonos-http-api server
+const API_BASE_URL = '/api/sonos';
 
 // Zod schemas for response validation
 export const NowPlayingSchema = z.object({
