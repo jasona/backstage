@@ -277,20 +277,20 @@ Example: `- [ ] 1.1 Read file` → `- [x] 1.1 Read file`
 
 ### Phase 6: Device Grouping
 
-- [ ] **6.0 Display group membership** (traces to: FR-30, FR-35, US-5)
-  - [ ] 6.0.1 Create `src/components/dashboard/group-indicator.tsx` showing group name/icon
-  - [ ] 6.0.2 Parse group info from zones API response
-  - [ ] 6.0.3 Visually connect grouped device cards (shared border, grouped section)
-  - [ ] 6.0.4 Indicate coordinator device with icon/label (FR-35)
+- [x] **6.0 Display group membership** (traces to: FR-30, FR-35, US-5)
+  - [x] 6.0.1 Create `src/components/dashboard/group-indicator.tsx` showing group name/icon
+  - [x] 6.0.2 Parse group info from zones API response
+  - [x] 6.0.3 Visually connect grouped device cards (shared border, grouped section)
+  - [x] 6.0.4 Indicate coordinator device with icon/label (FR-35)
 
-- [ ] **6.1 Build group management UI** (traces to: FR-31, FR-32, FR-33, FR-34, US-5)
-  - [ ] 6.1.1 Create `src/components/dashboard/group-manager.tsx` modal/panel
-  - [ ] 6.1.2 Implement "Add to group" action: select device, choose target group (FR-31)
-  - [ ] 6.1.3 Implement "Remove from group" action (FR-32)
-  - [ ] 6.1.4 Implement "Create new group" action: multi-select devices (FR-33)
-  - [ ] 6.1.5 Wire to API: `joinGroup()`, `leaveGroup()`
-  - [ ] 6.1.6 Verify grouping actions complete within 2 seconds (FR-34)
-  - [ ] 6.1.7 Write tests for group manager component
+- [x] **6.1 Build group management UI** (traces to: FR-31, FR-32, FR-33, FR-34, US-5)
+  - [x] 6.1.1 Create `src/components/dashboard/group-manager.tsx` modal/panel
+  - [x] 6.1.2 Implement "Add to group" action: select device, choose target group (FR-31)
+  - [x] 6.1.3 Implement "Remove from group" action (FR-32)
+  - [x] 6.1.4 Implement "Create new group" action: multi-select devices (FR-33)
+  - [x] 6.1.5 Wire to API: `joinGroup()`, `leaveGroup()`
+  - [x] 6.1.6 Verify grouping actions complete within 2 seconds (FR-34)
+  - [x] 6.1.7 Write tests for group manager component
 
 ---
 

@@ -7,6 +7,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { DeviceCard } from './device-card';
+import { GroupManager } from './group-manager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
   useDevices,
+  useZoneStatuses,
   usePlayPause,
   useNext,
   usePrevious,
@@ -41,6 +43,7 @@ interface DeviceGridProps {
 
 export function DeviceGrid({ className }: DeviceGridProps) {
   const { devices, isLoading, isError, error, refetch } = useDevices();
+  const { zoneStatuses } = useZoneStatuses();
   const playPauseMutation = usePlayPause();
   const nextMutation = useNext();
   const previousMutation = usePrevious();
@@ -52,6 +55,22 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [groupManageDevice, setGroupManageDevice] = useState<DeviceStatus | null>(null);
+
+  // Find zone for a device
+  const getZoneForDevice = useCallback(
+    (device: DeviceStatus) => {
+      return zoneStatuses.find(
+        (z) => z.coordinatorId === device.id || z.memberIds.includes(device.id)
+      );
+    },
+    [zoneStatuses]
+  );
+
+  // Handle group manage click
+  const handleGroupManage = useCallback((device: DeviceStatus) => {
+    setGroupManageDevice(device);
+  }, []);
 
   // Filter and sort devices
   const filteredDevices = useMemo(() => {
@@ -310,6 +329,7 @@ export function DeviceGrid({ className }: DeviceGridProps) {
           <DeviceCard
             key={device.id}
             device={device}
+            zone={getZoneForDevice(device)}
             isSelected={selectedDeviceId === device.id}
             isPlayPauseLoading={playPauseMutation.isPending && playPauseMutation.variables === device.roomName}
             isNextLoading={nextMutation.isPending && nextMutation.variables === device.roomName}
@@ -320,9 +340,19 @@ export function DeviceGrid({ className }: DeviceGridProps) {
             onPrevious={handlePrevious}
             onVolumeChange={handleVolumeChange}
             onToggleMute={handleToggleMute}
+            onGroupManage={handleGroupManage}
           />
         ))}
       </div>
+
+      {/* Group Manager Dialog */}
+      {groupManageDevice && (
+        <GroupManager
+          device={groupManageDevice}
+          open={!!groupManageDevice}
+          onOpenChange={(open) => !open && setGroupManageDevice(null)}
+        />
+      )}
     </div>
   );
 }

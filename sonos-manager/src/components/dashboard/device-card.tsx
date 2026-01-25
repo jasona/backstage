@@ -20,14 +20,18 @@ import {
   VolumeX,
   Users,
   Loader2,
+  Crown,
 } from 'lucide-react';
 import type { DeviceStatus } from '@/types/sonos';
+import type { ZoneStatus } from '@/types/sonos';
 
 // Debounce delay for volume changes (ms)
 const VOLUME_DEBOUNCE_MS = 100;
 
 interface DeviceCardProps {
   device: DeviceStatus;
+  /** Zone info for this device's group */
+  zone?: ZoneStatus;
   isSelected?: boolean;
   isPlayPauseLoading?: boolean;
   isNextLoading?: boolean;
@@ -38,10 +42,12 @@ interface DeviceCardProps {
   onPrevious?: (roomName: string) => void;
   onVolumeChange?: (roomName: string, volume: number) => void;
   onToggleMute?: (roomName: string) => void;
+  onGroupManage?: (device: DeviceStatus) => void;
 }
 
 export function DeviceCard({
   device,
+  zone,
   isSelected = false,
   isPlayPauseLoading = false,
   isNextLoading = false,
@@ -52,9 +58,11 @@ export function DeviceCard({
   onPrevious,
   onVolumeChange,
   onToggleMute,
+  onGroupManage,
 }: DeviceCardProps) {
   const isPlaying = device.playbackState === 'PLAYING';
   const hasNowPlaying = device.nowPlaying?.title;
+  const isInGroup = zone && zone.memberIds.length > 1;
 
   // Local volume state for immediate UI feedback
   const [localVolume, setLocalVolume] = useState(device.volume);
@@ -151,10 +159,29 @@ export function DeviceCard({
               <h3 className="font-medium text-foreground truncate">
                 {device.roomName}
               </h3>
-              {device.isCoordinator && (
-                <Badge variant="outline" className="text-xs px-1.5 py-0">
-                  <Users className="w-3 h-3 mr-1" />
-                  Group
+              {isInGroup && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'text-xs px-1.5 py-0 cursor-pointer hover:bg-accent transition-colors',
+                    device.isCoordinator
+                      ? 'border-primary/50 text-primary'
+                      : 'border-border-subtle text-muted-foreground'
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGroupManage?.(device);
+                  }}
+                >
+                  {device.isCoordinator ? (
+                    <Crown className="w-3 h-3 mr-1" />
+                  ) : (
+                    <Users className="w-3 h-3 mr-1" />
+                  )}
+                  {device.isCoordinator ? 'Leading' : zone?.coordinatorRoom}
+                  <span className="ml-1 text-muted-foreground">
+                    +{zone!.memberIds.length - 1}
+                  </span>
                 </Badge>
               )}
             </div>
@@ -162,6 +189,21 @@ export function DeviceCard({
               {device.modelName}
             </p>
           </div>
+
+          {/* Group button for ungrouped devices */}
+          {!isInGroup && onGroupManage && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              onClick={(e) => {
+                e.stopPropagation();
+                onGroupManage(device);
+              }}
+            >
+              <Users className="w-3.5 h-3.5" />
+            </Button>
+          )}
 
           {/* Status indicator */}
           <div
