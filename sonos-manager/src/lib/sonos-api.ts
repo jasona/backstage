@@ -328,3 +328,66 @@ export async function checkConnection(): Promise<boolean> {
     return false;
   }
 }
+
+// Diagnostic API functions
+
+/**
+ * Device diagnostic info schema
+ */
+export const DeviceDiagnosticSchema = z.object({
+  softwareVersion: z.string().optional(),
+  hardwareVersion: z.string().optional(),
+  serialNumber: z.string().optional(),
+  macAddress: z.string().optional(),
+  ipAddress: z.string().optional(),
+  modelNumber: z.string().optional(),
+  modelName: z.string().optional(),
+  displayName: z.string().optional(),
+});
+
+export type DeviceDiagnostic = z.infer<typeof DeviceDiagnosticSchema>;
+
+/**
+ * Get detailed device information from a room
+ * Note: node-sonos-http-api provides this via /<roomName>/state endpoint
+ */
+export async function getDeviceInfo(roomName: string): Promise<DeviceDiagnostic> {
+  try {
+    const response = await apiRequest<unknown>(`/${encodeURIComponent(roomName)}/state`);
+    // The state endpoint returns various info - we extract what we can
+    if (response && typeof response === 'object') {
+      const data = response as Record<string, unknown>;
+      return {
+        softwareVersion: data.softwareVersion as string | undefined,
+        hardwareVersion: data.hardwareVersion as string | undefined,
+        serialNumber: data.serialNum as string | undefined,
+        macAddress: data.macAddress as string | undefined,
+        ipAddress: data.ipAddress as string | undefined,
+        modelNumber: data.modelNumber as string | undefined,
+        modelName: data.modelName as string | undefined,
+        displayName: data.roomName as string | undefined,
+      };
+    }
+    return {};
+  } catch {
+    // Return empty object if state endpoint fails
+    return {};
+  }
+}
+
+/**
+ * Reboot a Sonos device
+ * Note: This requires direct access to the device's web interface
+ * at http://<device-ip>:1400/reboot which may need authentication
+ */
+export async function rebootDevice(roomName: string): Promise<void> {
+  // node-sonos-http-api doesn't have a built-in reboot endpoint
+  // This would need to be implemented via direct device access
+  // For now, we throw an error indicating it's not supported
+  throw new SonosApiError(
+    'Device reboot is not supported through the current API. ' +
+    'You can reboot devices manually through the Sonos app or device web interface.',
+    501,
+    `/${roomName}/reboot`
+  );
+}

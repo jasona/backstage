@@ -323,3 +323,23 @@ export function useResumeAll() {
     },
   });
 }
+
+/**
+ * Hook for setting volume on all devices
+ */
+export function useSetAllVolume() {
+  const queryClient = useQueryClient();
+  const { devices } = useDevices({ refetchInterval: 0 }); // Don't refetch during volume set
+
+  return useMutation({
+    mutationFn: async (volume: number) => {
+      // Set volume on all devices in parallel
+      await Promise.all(
+        devices.map((device) => setVolume(device.roomName, volume))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sonosQueryKeys.zones });
+    },
+  });
+}
