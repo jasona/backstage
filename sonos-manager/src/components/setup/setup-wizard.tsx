@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PinSetup } from './pin-setup';
 import { setConfig } from '@/lib/storage';
-import { hashPin } from '@/lib/pin';
+import { hashPinSync } from '@/lib/pin';
 import { checkConnection } from '@/lib/sonos-api';
 import { cn } from '@/lib/utils';
 import { Loader2, CheckCircle2, XCircle, Wifi, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -79,29 +79,36 @@ export function SetupWizard() {
   };
 
   // Handle PIN setup completion
-  const handlePinSetup = async (pin: string | null) => {
+  const handlePinSetup = useCallback((pin: string | null) => {
+    console.log('handlePinSetup called with pin:', pin ? '****' : null);
     try {
-      const pinHash = pin ? await hashPin(pin) : undefined;
+      console.log('About to hash PIN...');
+      const pinHash = pin ? hashPinSync(pin) : undefined;
+      console.log('PIN hashed successfully');
 
       // Save configuration
+      console.log('Saving config...');
       setConfig({
         seedIp: state.seedIp,
         pinHash,
         isConfigured: true,
       });
+      console.log('Config saved');
 
       updateState({ step: 'complete' });
+      console.log('State updated to complete');
 
       // Redirect to dashboard after brief delay
       setTimeout(() => {
         router.push('/');
       }, 1500);
     } catch (err) {
+      console.error('Error in handlePinSetup:', err);
       updateState({
         error: err instanceof Error ? err.message : 'Failed to save configuration',
       });
     }
-  };
+  }, [state.seedIp, updateState, router]);
 
   // Render step content
   const renderStep = () => {

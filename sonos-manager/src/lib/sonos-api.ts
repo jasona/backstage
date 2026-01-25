@@ -46,10 +46,11 @@ export const GroupStateSchema = z.object({
   mute: z.boolean().default(false),
 });
 
+// CACHE_BUST_20240125
 export const SonosDeviceSchema = z.object({
   uuid: z.string(),
   roomName: z.string(),
-  coordinator: z.string(), // UUID of the coordinator device
+  coordinator: z.string(), // UUID of the coordinator device (NOT a boolean!)
   groupState: GroupStateSchema.optional(),
   state: DeviceStateSchema.optional(),
 });

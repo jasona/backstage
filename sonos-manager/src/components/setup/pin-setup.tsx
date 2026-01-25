@@ -46,11 +46,14 @@ export function PinSetup({ onComplete }: PinSetupProps) {
   }, [pin]);
 
   const handleConfirmPin = useCallback(() => {
+    console.log('handleConfirmPin called, pin:', pin, 'confirmPin:', confirmPin);
     if (pin !== confirmPin) {
+      console.log('PINs do not match');
       setError('PINs do not match');
       setConfirmPin('');
       return;
     }
+    console.log('Calling onComplete with pin');
     onComplete(pin);
   }, [pin, confirmPin, onComplete]);
 
@@ -71,16 +74,22 @@ export function PinSetup({ onComplete }: PinSetupProps) {
 
   // Choice step - enable PIN or skip
   if (step === 'choice') {
+    console.log('Rendering choice step');
     return (
       <div className="space-y-4">
         <Button
-          onClick={() => setStep('enter')}
+          type="button"
+          onClick={() => {
+            console.log('Set a PIN clicked, going to enter step');
+            setStep('enter');
+          }}
           variant="default"
           className="w-full h-12"
         >
           Set a PIN
         </Button>
         <Button
+          type="button"
           onClick={handleSkip}
           variant="outline"
           className="w-full h-12"
@@ -96,6 +105,7 @@ export function PinSetup({ onComplete }: PinSetupProps) {
 
   // Enter PIN step
   if (step === 'enter') {
+    console.log('Rendering enter step, pin length:', pin.length);
     return (
       <div className="space-y-4">
         <div className="space-y-2">
@@ -123,6 +133,7 @@ export function PinSetup({ onComplete }: PinSetupProps) {
 
         <div className="flex gap-3">
           <Button
+            type="button"
             variant="outline"
             onClick={handleBack}
             className="flex-1"
@@ -130,7 +141,11 @@ export function PinSetup({ onComplete }: PinSetupProps) {
             Back
           </Button>
           <Button
-            onClick={handleSubmitPin}
+            type="button"
+            onClick={() => {
+              console.log('Continue clicked, pin:', pin);
+              handleSubmitPin();
+            }}
             disabled={pin.length < MIN_PIN_LENGTH}
             className="flex-1"
           >
@@ -142,6 +157,7 @@ export function PinSetup({ onComplete }: PinSetupProps) {
   }
 
   // Confirm PIN step
+  console.log('Rendering confirm step, confirmPin length:', confirmPin.length);
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -176,7 +192,11 @@ export function PinSetup({ onComplete }: PinSetupProps) {
           Back
         </Button>
         <Button
-          onClick={handleConfirmPin}
+          type="button"
+          onClick={() => {
+            console.log('Set PIN button clicked!');
+            handleConfirmPin();
+          }}
           disabled={confirmPin.length < MIN_PIN_LENGTH}
           className="flex-1"
         >
