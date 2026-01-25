@@ -11,7 +11,17 @@
       "Bash(npx create-next-app:*)",
       "Bash(npx shadcn@latest init:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm ls:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(where gh:*)",
+      "Bash(cmd /c \"where gh\")",
+      "Bash(git rm:*)",
+      "Bash(ls:*)",
+      "Bash(git mv sonos-manager/.env.example sonos-manager/.gitignore sonos-manager/components.json sonos-manager/eslint.config.mjs sonos-manager/jest.config.js sonos-manager/jest.setup.js sonos-manager/next.config.ts sonos-manager/next-env.d.ts sonos-manager/package.json sonos-manager/package-lock.json sonos-manager/postcss.config.mjs sonos-manager/README.md sonos-manager/tsconfig.json .)",
+      "Bash(git mv:*)"
     ]
   }
 }
