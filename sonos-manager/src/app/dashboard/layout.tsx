@@ -8,6 +8,7 @@ import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { useAuth } from '@/providers/auth-provider';
+import { SonosProvider } from '@/providers/sonos-provider';
 import { Loader2 } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -39,9 +40,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen bg-base">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
-    </div>
+    <SonosProvider>
+      <div className="flex min-h-screen bg-base">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">{children}</div>
+      </div>
+    </SonosProvider>
   );
 }

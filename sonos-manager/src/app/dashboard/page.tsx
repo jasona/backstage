@@ -8,15 +8,16 @@ import { Header } from '@/components/layout/header';
 import { DeviceGrid } from '@/components/dashboard/device-grid';
 import { Button } from '@/components/ui/button';
 import { usePauseAll, useResumeAll, useDevices } from '@/hooks/use-sonos';
+import { useSonosConnection } from '@/providers/sonos-provider';
 import { Pause, Play } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { devices, isLoading } = useDevices();
+  const { devices } = useDevices();
+  const { connectionStatus } = useSonosConnection();
   const pauseAllMutation = usePauseAll();
   const resumeAllMutation = useResumeAll();
 
   const playingCount = devices.filter((d) => d.playbackState === 'PLAYING').length;
-  const connectionStatus = isLoading ? 'connecting' : 'connected';
 
   return (
     <div className="flex flex-col min-h-screen">

@@ -92,7 +92,7 @@ export function DeviceCard({
   return (
     <Card
       className={cn(
-        'bg-surface border-border-subtle cursor-pointer transition-all hover:bg-hover hover:-translate-y-0.5',
+        'bg-surface border-border-subtle cursor-pointer transition-all duration-300 hover:bg-hover hover:-translate-y-0.5',
         isPlaying && 'border-primary/30 shadow-[0_0_15px_rgba(99,102,241,0.15)]',
         isSelected && 'ring-2 ring-primary'
       )}
@@ -121,8 +121,8 @@ export function DeviceCard({
           {/* Status indicator */}
           <div
             className={cn(
-              'w-2 h-2 rounded-full flex-shrink-0 mt-1.5',
-              isPlaying && 'bg-success',
+              'w-2 h-2 rounded-full flex-shrink-0 mt-1.5 transition-colors duration-300',
+              isPlaying && 'bg-success animate-pulse',
               device.playbackState === 'PAUSED_PLAYBACK' && 'bg-warning',
               device.playbackState === 'STOPPED' && 'bg-muted-foreground'
             )}

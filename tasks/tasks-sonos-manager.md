@@ -229,21 +229,21 @@ Example: `- [ ] 1.1 Read file` → `- [x] 1.1 Read file`
 
 ### Phase 4: Real-Time Status Updates
 
-- [ ] **4.0 Implement SSE connection for live updates** (traces to: FR-14, G-2)
-  - [ ] 4.0.1 Research node-sonos-http-api event stream endpoint (or polling fallback)
-  - [ ] 4.0.2 Create `src/hooks/use-device-status.ts` hook:
+- [x] **4.0 Implement SSE connection for live updates** (traces to: FR-14, G-2)
+  - [x] 4.0.1 Research node-sonos-http-api event stream endpoint (or polling fallback)
+  - [x] 4.0.2 Create `src/hooks/use-device-status.ts` hook:
     - Connect to SSE endpoint if available
     - Fall back to polling at 2-second intervals (FR-14)
     - Update React Query cache on status change
-  - [ ] 4.0.3 Create `src/providers/sonos-provider.tsx` to manage SSE connection lifecycle
-  - [ ] 4.0.4 Handle reconnection on connection loss
-  - [ ] 4.0.5 Show connection status indicator in header (connected/reconnecting)
-  - [ ] 4.0.6 Write tests for device status hook with mocked SSE/polling
+  - [x] 4.0.3 Create `src/providers/sonos-provider.tsx` to manage SSE connection lifecycle
+  - [x] 4.0.4 Handle reconnection on connection loss
+  - [x] 4.0.5 Show connection status indicator in header (connected/reconnecting)
+  - [x] 4.0.6 Write tests for device status hook with mocked SSE/polling
 
-- [ ] **4.1 Integrate real-time updates with dashboard** (traces to: FR-14, US-2)
-  - [ ] 4.1.1 Update device cards to reflect real-time status changes
-  - [ ] 4.1.2 Animate status transitions (fade/pulse on change)
-  - [ ] 4.1.3 Verify status updates appear within 2 seconds of device state change (G-2)
+- [x] **4.1 Integrate real-time updates with dashboard** (traces to: FR-14, US-2)
+  - [x] 4.1.1 Update device cards to reflect real-time status changes
+  - [x] 4.1.2 Animate status transitions (fade/pulse on change)
+  - [x] 4.1.3 Verify status updates appear within 2 seconds of device state change (G-2)
 
 ---
 
