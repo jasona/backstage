@@ -124,15 +124,15 @@ Example: `- [ ] 1.1 Read file` → `- [x] 1.1 Read file`
 
 ### Phase 1: Project Setup & Backend Integration
 
-- [ ] **1.0 Initialize Next.js project with dependencies** (traces to: Technical Considerations)
-  - [ ] 1.1 Create Next.js 14+ project with App Router, TypeScript, Tailwind CSS, ESLint
-  - [ ] 1.2 Install shadcn/ui and initialize with dark theme defaults
-  - [ ] 1.3 Install core shadcn/ui components: button, input, slider, dialog, card, badge, tooltip, command
-  - [ ] 1.4 Install additional dependencies: `@tanstack/react-query`, `zod`, `bcryptjs`, `clsx`, `tailwind-merge`, `class-variance-authority`, `lucide-react`
-  - [ ] 1.5 Configure Tailwind with Linear-style dark theme tokens (bg-base, bg-surface, bg-elevated, accent colors per DRD)
-  - [ ] 1.6 Create `src/lib/utils.ts` with `cn()` utility function
-  - [ ] 1.7 Set up `.env.local` with `NEXT_PUBLIC_SONOS_API_URL=http://localhost:5005`
-  - [ ] 1.8 Create `.env.example` documenting required environment variables
+- [x] **1.0 Initialize Next.js project with dependencies** (traces to: Technical Considerations)
+  - [x] 1.1 Create Next.js 14+ project with App Router, TypeScript, Tailwind CSS, ESLint
+  - [x] 1.2 Install shadcn/ui and initialize with dark theme defaults
+  - [x] 1.3 Install core shadcn/ui components: button, input, slider, dialog, card, badge, tooltip, command
+  - [x] 1.4 Install additional dependencies: `@tanstack/react-query`, `zod`, `bcryptjs`, `clsx`, `tailwind-merge`, `class-variance-authority`, `lucide-react`
+  - [x] 1.5 Configure Tailwind with Linear-style dark theme tokens (bg-base, bg-surface, bg-elevated, accent colors per DRD)
+  - [x] 1.6 Create `src/lib/utils.ts` with `cn()` utility function
+  - [x] 1.7 Set up `.env.local` with `NEXT_PUBLIC_SONOS_API_URL=http://localhost:5005`
+  - [x] 1.8 Create `.env.example` documenting required environment variables
 
 - [ ] **1.1 Set up node-sonos-http-api backend** (traces to: Technical Considerations)
   - [ ] 1.1.1 Document installation steps for node-sonos-http-api in README
