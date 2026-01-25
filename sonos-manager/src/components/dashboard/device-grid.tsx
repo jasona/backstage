@@ -311,6 +311,9 @@ export function DeviceGrid({ className }: DeviceGridProps) {
             key={device.id}
             device={device}
             isSelected={selectedDeviceId === device.id}
+            isPlayPauseLoading={playPauseMutation.isPending && playPauseMutation.variables === device.roomName}
+            isNextLoading={nextMutation.isPending && nextMutation.variables === device.roomName}
+            isPreviousLoading={previousMutation.isPending && previousMutation.variables === device.roomName}
             onSelect={setSelectedDeviceId}
             onPlayPause={handlePlayPause}
             onNext={handleNext}

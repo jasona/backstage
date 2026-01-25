@@ -5,7 +5,7 @@
  * Displays device status, now playing, and controls.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -19,12 +19,19 @@ import {
   Volume2,
   VolumeX,
   Users,
+  Loader2,
 } from 'lucide-react';
 import type { DeviceStatus } from '@/types/sonos';
+
+// Debounce delay for volume changes (ms)
+const VOLUME_DEBOUNCE_MS = 100;
 
 interface DeviceCardProps {
   device: DeviceStatus;
   isSelected?: boolean;
+  isPlayPauseLoading?: boolean;
+  isNextLoading?: boolean;
+  isPreviousLoading?: boolean;
   onSelect?: (deviceId: string) => void;
   onPlayPause?: (roomName: string) => void;
   onNext?: (roomName: string) => void;
@@ -36,6 +43,9 @@ interface DeviceCardProps {
 export function DeviceCard({
   device,
   isSelected = false,
+  isPlayPauseLoading = false,
+  isNextLoading = false,
+  isPreviousLoading = false,
   onSelect,
   onPlayPause,
   onNext,
@@ -45,6 +55,18 @@ export function DeviceCard({
 }: DeviceCardProps) {
   const isPlaying = device.playbackState === 'PLAYING';
   const hasNowPlaying = device.nowPlaying?.title;
+
+  // Local volume state for immediate UI feedback
+  const [localVolume, setLocalVolume] = useState(device.volume);
+  const [isDragging, setIsDragging] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync local volume with device volume when not dragging
+  useEffect(() => {
+    if (!isDragging) {
+      setLocalVolume(device.volume);
+    }
+  }, [device.volume, isDragging]);
 
   const handleClick = useCallback(() => {
     onSelect?.(device.id);
@@ -74,12 +96,35 @@ export function DeviceCard({
     [device.roomName, onPrevious]
   );
 
+  // Debounced volume change handler
   const handleVolumeChange = useCallback(
     (value: number[]) => {
-      onVolumeChange?.(device.roomName, value[0]);
+      const newVolume = value[0];
+      setLocalVolume(newVolume);
+      setIsDragging(true);
+
+      // Clear previous timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      // Set new debounced timer
+      debounceTimerRef.current = setTimeout(() => {
+        onVolumeChange?.(device.roomName, newVolume);
+        setIsDragging(false);
+      }, VOLUME_DEBOUNCE_MS);
     },
     [device.roomName, onVolumeChange]
   );
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleToggleMute = useCallback(
     (e: React.MouseEvent) => {
@@ -153,8 +198,13 @@ export function DeviceCard({
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={handlePrevious}
+            disabled={isPreviousLoading}
           >
-            <SkipBack className="w-4 h-4" />
+            {isPreviousLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <SkipBack className="w-4 h-4" />
+            )}
           </Button>
 
           <Button
@@ -167,8 +217,11 @@ export function DeviceCard({
                 : 'text-muted-foreground hover:text-foreground'
             )}
             onClick={handlePlayPause}
+            disabled={isPlayPauseLoading}
           >
-            {isPlaying ? (
+            {isPlayPauseLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isPlaying ? (
               <Pause className="w-5 h-5" />
             ) : (
               <Play className="w-5 h-5" />
@@ -180,8 +233,13 @@ export function DeviceCard({
             size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={handleNext}
+            disabled={isNextLoading}
           >
-            <SkipForward className="w-4 h-4" />
+            {isNextLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <SkipForward className="w-4 h-4" />
+            )}
           </Button>
         </div>
 
@@ -201,7 +259,7 @@ export function DeviceCard({
           </Button>
 
           <Slider
-            value={[device.muted ? 0 : device.volume]}
+            value={[device.muted ? 0 : localVolume]}
             max={100}
             step={1}
             onValueChange={handleVolumeChange}
@@ -210,7 +268,7 @@ export function DeviceCard({
           />
 
           <span className="text-xs text-muted-foreground w-8 text-right flex-shrink-0">
-            {device.volume}%
+            {localVolume}%
           </span>
         </div>
       </CardContent>

@@ -249,29 +249,29 @@ Example: `- [ ] 1.1 Read file` → `- [x] 1.1 Read file`
 
 ### Phase 5: Playback Controls
 
-- [ ] **5.0 Build playback control components** (traces to: FR-20, FR-21, US-3)
-  - [ ] 5.0.1 Create `src/components/dashboard/playback-controls.tsx` with play/pause, next, previous buttons
-  - [ ] 5.0.2 Use Lucide icons: Play, Pause, SkipForward, SkipBack
-  - [ ] 5.0.3 Wire buttons to API calls via `use-sonos` hook
-  - [ ] 5.0.4 Add loading/disabled state during API calls
-  - [ ] 5.0.5 Integrate playback controls into device card
-  - [ ] 5.0.6 Write tests for playback controls
+- [x] **5.0 Build playback control components** (traces to: FR-20, FR-21, US-3)
+  - [x] 5.0.1 Create `src/components/dashboard/playback-controls.tsx` with play/pause, next, previous buttons
+  - [x] 5.0.2 Use Lucide icons: Play, Pause, SkipForward, SkipBack
+  - [x] 5.0.3 Wire buttons to API calls via `use-sonos` hook
+  - [x] 5.0.4 Add loading/disabled state during API calls
+  - [x] 5.0.5 Integrate playback controls into device card
+  - [x] 5.0.6 Write tests for playback controls
 
-- [ ] **5.1 Build volume control with optimistic updates** (traces to: FR-22, FR-23, FR-24, G-3, US-3)
-  - [ ] 5.1.1 Create `src/components/dashboard/volume-control.tsx` using shadcn slider
-  - [ ] 5.1.2 Implement optimistic UI update (FR-24): update display immediately on drag
-  - [ ] 5.1.3 Debounce API calls (100ms) to prevent flooding (FR-23)
-  - [ ] 5.1.4 Roll back on API error with toast notification
-  - [ ] 5.1.5 Add mute/unmute toggle button
-  - [ ] 5.1.6 Integrate volume control into device card
-  - [ ] 5.1.7 Write tests for volume control component
-  - [ ] 5.1.8 Verify volume changes reflect in <500ms end-to-end (G-3)
+- [x] **5.1 Build volume control with optimistic updates** (traces to: FR-22, FR-23, FR-24, G-3, US-3)
+  - [x] 5.1.1 Create `src/components/dashboard/volume-control.tsx` using shadcn slider
+  - [x] 5.1.2 Implement optimistic UI update (FR-24): update display immediately on drag
+  - [x] 5.1.3 Debounce API calls (100ms) to prevent flooding (FR-23)
+  - [x] 5.1.4 Roll back on API error with toast notification
+  - [x] 5.1.5 Add mute/unmute toggle button
+  - [x] 5.1.6 Integrate volume control into device card
+  - [x] 5.1.7 Write tests for volume control component
+  - [x] 5.1.8 Verify volume changes reflect in <500ms end-to-end (G-3)
 
-- [ ] **5.2 Implement group volume control** (traces to: FR-25, FR-26)
-  - [ ] 5.2.1 Detect grouped devices and show group volume slider
-  - [ ] 5.2.2 Group volume affects all devices in group (FR-25)
-  - [ ] 5.2.3 Allow individual device volume adjustment within group (FR-26)
-  - [ ] 5.2.4 Visual distinction between group and individual volume
+- [x] **5.2 Implement group volume control** (traces to: FR-25, FR-26)
+  - [x] 5.2.1 Detect grouped devices and show group volume slider
+  - [x] 5.2.2 Group volume affects all devices in group (FR-25)
+  - [x] 5.2.3 Allow individual device volume adjustment within group (FR-26)
+  - [x] 5.2.4 Visual distinction between group and individual volume
 
 ---
 
