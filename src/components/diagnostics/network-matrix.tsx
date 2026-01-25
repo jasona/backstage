@@ -2,11 +2,12 @@
 
 /**
  * Network matrix visualization component.
- * Shows a visual grid of device connections and status.
- * Note: Real signal strength data would require direct device access.
+ * Shows a visual grid of device connections and network status.
+ * Uses real network diagnostics data when available.
  */
 
 import { useMemo } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -17,51 +18,129 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { Wifi, WifiOff, Speaker } from 'lucide-react';
+import {
+  Wifi,
+  WifiOff,
+  Speaker,
+  Cable,
+  Radio,
+  SignalHigh,
+  SignalMedium,
+  SignalLow,
+} from 'lucide-react';
 import type { DeviceStatus } from '@/types/sonos';
+import type { DeviceNetworkDiagnostics, SignalQuality, NetworkConnectionType } from '@/types/sonos';
 
 interface NetworkMatrixProps {
   devices: DeviceStatus[];
+  diagnostics?: DeviceNetworkDiagnostics[];
   isLoading: boolean;
 }
 
-// Signal strength colors (simulated based on playback state for now)
-const getSignalColor = (isActive: boolean, isGrouped: boolean) => {
-  if (isActive) return 'bg-success';
-  if (isGrouped) return 'bg-primary';
-  return 'bg-muted-foreground/50';
-};
+// Get connection type icon
+function ConnectionIcon({ type }: { type: NetworkConnectionType }) {
+  switch (type) {
+    case 'ethernet':
+      return <Cable className="w-3 h-3" />;
+    case 'sonosnet':
+      return <Radio className="w-3 h-3" />;
+    case 'wifi':
+      return <Wifi className="w-3 h-3" />;
+    default:
+      return <Wifi className="w-3 h-3" />;
+  }
+}
 
-const getSignalLabel = (isActive: boolean, isGrouped: boolean) => {
-  if (isActive) return 'Active';
-  if (isGrouped) return 'Grouped';
-  return 'Idle';
-};
+// Get signal quality styling
+function getSignalStyles(quality: SignalQuality, isPlaying: boolean) {
+  if (quality === 'offline') {
+    return {
+      bgClass: 'bg-muted/50 border border-border-subtle',
+      iconClass: 'text-muted-foreground',
+      icon: <WifiOff className="w-4 h-4" />,
+    };
+  }
 
-export function NetworkMatrix({ devices, isLoading }: NetworkMatrixProps) {
-  // Group devices by their group ID
-  const deviceGroups = useMemo(() => {
-    const groups: Map<string, DeviceStatus[]> = new Map();
+  if (quality === 'poor') {
+    return {
+      bgClass: 'bg-destructive/20 border border-destructive/30',
+      iconClass: 'text-destructive',
+      icon: <SignalLow className="w-4 h-4" />,
+    };
+  }
 
-    devices.forEach((device) => {
-      const groupId = device.groupId || device.id;
-      if (!groups.has(groupId)) {
-        groups.set(groupId, []);
+  if (quality === 'fair') {
+    return {
+      bgClass: 'bg-warning/20 border border-warning/30',
+      iconClass: 'text-warning',
+      icon: <SignalMedium className="w-4 h-4" />,
+    };
+  }
+
+  // excellent or good
+  if (isPlaying) {
+    return {
+      bgClass: 'bg-success/20 border border-success/30',
+      iconClass: 'text-success',
+      icon: <SignalHigh className="w-4 h-4" />,
+    };
+  }
+
+  return {
+    bgClass: 'bg-primary/10 border border-primary/20',
+    iconClass: 'text-primary',
+    icon: <SignalHigh className="w-4 h-4" />,
+  };
+}
+
+// Fallback styling when no diagnostics available
+function getFallbackStyles(device: DeviceStatus) {
+  const isPlaying = device.playbackState === 'PLAYING';
+  const isGrouped = !device.isCoordinator;
+
+  if (isPlaying) {
+    return {
+      bgClass: 'bg-success/20 border border-success/30',
+      iconClass: 'text-success',
+    };
+  }
+  if (isGrouped) {
+    return {
+      bgClass: 'bg-primary/20 border border-primary/30',
+      iconClass: 'text-primary',
+    };
+  }
+  return {
+    bgClass: 'bg-muted/50 border border-border-subtle',
+    iconClass: 'text-muted-foreground',
+  };
+}
+
+export function NetworkMatrix({ devices, diagnostics, isLoading }: NetworkMatrixProps) {
+  // Create a map of device diagnostics by ID for quick lookup
+  const diagnosticsMap = useMemo(() => {
+    const map = new Map<string, DeviceNetworkDiagnostics>();
+    if (diagnostics) {
+      for (const d of diagnostics) {
+        map.set(d.deviceId, d);
       }
-      groups.get(groupId)!.push(device);
-    });
-
-    return groups;
-  }, [devices]);
+    }
+    return map;
+  }, [diagnostics]);
 
   // Calculate summary stats
   const stats = useMemo(() => {
     const playing = devices.filter((d) => d.playbackState === 'PLAYING').length;
-    const grouped = devices.filter((d) => !d.isCoordinator).length;
-    const groups = new Set(devices.map((d) => d.groupId || d.id)).size;
+    const online = diagnostics
+      ? diagnostics.filter((d) => d.isReachable).length
+      : devices.length;
+    const offline = diagnostics
+      ? diagnostics.filter((d) => !d.isReachable).length
+      : 0;
+    const wired = diagnostics?.filter((d) => d.isWired).length ?? 0;
 
-    return { playing, grouped, groups, total: devices.length };
-  }, [devices]);
+    return { playing, online, offline, wired, total: devices.length };
+  }, [devices, diagnostics]);
 
   if (isLoading) {
     return (
@@ -83,6 +162,8 @@ export function NetworkMatrix({ devices, isLoading }: NetworkMatrixProps) {
     );
   }
 
+  const hasDiagnostics = diagnostics && diagnostics.length > 0;
+
   return (
     <Card className="bg-surface border-border-subtle">
       <CardHeader className="pb-2">
@@ -93,11 +174,18 @@ export function NetworkMatrix({ devices, isLoading }: NetworkMatrixProps) {
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
-              {stats.total} devices
+              {stats.online} online
             </Badge>
-            <Badge variant="outline" className="text-xs">
-              {stats.groups} groups
-            </Badge>
+            {stats.offline > 0 && (
+              <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
+                {stats.offline} offline
+              </Badge>
+            )}
+            {stats.wired > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {stats.wired} wired
+              </Badge>
+            )}
             <Badge variant="default" className="text-xs">
               {stats.playing} playing
             </Badge>
@@ -106,62 +194,116 @@ export function NetworkMatrix({ devices, isLoading }: NetworkMatrixProps) {
       </CardHeader>
       <CardContent>
         {/* Legend */}
-        <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-success" />
-            <span>Playing</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-primary" />
-            <span>Grouped</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-muted-foreground/50" />
-            <span>Idle</span>
-          </div>
+        <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground flex-wrap">
+          {hasDiagnostics ? (
+            <>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-success" />
+                <span>Good Signal</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-warning" />
+                <span>Fair Signal</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-destructive" />
+                <span>Poor Signal</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Cable className="w-3 h-3" />
+                <span>Wired</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Radio className="w-3 h-3" />
+                <span>SonosNet</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Wifi className="w-3 h-3" />
+                <span>WiFi</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-success" />
+                <span>Playing</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-primary" />
+                <span>Grouped</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded bg-muted-foreground/50" />
+                <span>Idle</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Device Grid */}
         <TooltipProvider>
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
             {devices.map((device) => {
+              const diag = diagnosticsMap.get(device.id);
               const isPlaying = device.playbackState === 'PLAYING';
-              const isGrouped = !device.isCoordinator;
+
+              // Get styling based on diagnostics or fallback
+              let styles: { bgClass: string; iconClass: string; icon?: React.ReactNode };
+              if (diag) {
+                styles = getSignalStyles(diag.signalQuality, isPlaying);
+              } else {
+                const fallback = getFallbackStyles(device);
+                styles = { ...fallback, icon: undefined };
+              }
 
               return (
                 <Tooltip key={device.id}>
                   <TooltipTrigger asChild>
-                    <div
+                    <Link
+                      href={`/dashboard/diagnostics/${device.id}`}
                       className={cn(
                         'aspect-square rounded-lg flex flex-col items-center justify-center gap-1 p-2 transition-all cursor-pointer hover:scale-105',
-                        isPlaying
-                          ? 'bg-success/20 border border-success/30'
-                          : isGrouped
-                          ? 'bg-primary/20 border border-primary/30'
-                          : 'bg-muted/50 border border-border-subtle'
+                        styles.bgClass
                       )}
                     >
-                      <Speaker
-                        className={cn(
-                          'w-4 h-4',
-                          isPlaying
-                            ? 'text-success'
-                            : isGrouped
-                            ? 'text-primary'
-                            : 'text-muted-foreground'
+                      <div className="flex items-center gap-0.5">
+                        <Speaker className={cn('w-4 h-4', styles.iconClass)} />
+                        {diag && (
+                          <ConnectionIcon type={diag.connectionType} />
                         )}
-                      />
+                      </div>
                       <span className="text-[10px] text-center truncate w-full px-1 text-muted-foreground">
                         {device.roomName.slice(0, 8)}
                       </span>
-                    </div>
+                    </Link>
                   </TooltipTrigger>
                   <TooltipContent>
                     <div className="space-y-1">
                       <p className="font-medium">{device.roomName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {device.modelName}
+                        {diag?.modelNumber || device.modelName}
                       </p>
+                      {diag && (
+                        <>
+                          <p className="text-xs">
+                            Connection:{' '}
+                            {diag.connectionType === 'ethernet'
+                              ? 'Wired (Ethernet)'
+                              : diag.connectionType === 'sonosnet'
+                              ? 'SonosNet'
+                              : 'WiFi'}
+                          </p>
+                          <p className="text-xs">
+                            Signal: {diag.signalQuality}
+                            {diag.snr !== undefined && ` (${diag.snr} dB)`}
+                          </p>
+                          {diag.ipAddress && (
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {diag.ipAddress}
+                            </p>
+                          )}
+                        </>
+                      )}
                       <p className="text-xs">
                         Status:{' '}
                         {isPlaying
@@ -184,50 +326,13 @@ export function NetworkMatrix({ devices, isLoading }: NetworkMatrixProps) {
           </div>
         </TooltipProvider>
 
-        {/* Groups Section */}
-        {deviceGroups.size > 1 && (
-          <div className="mt-6 pt-4 border-t border-border-subtle">
-            <h4 className="text-sm font-medium text-foreground mb-3">
-              Active Groups
-            </h4>
-            <div className="space-y-2">
-              {Array.from(deviceGroups.entries())
-                .filter(([, members]) => members.length > 1)
-                .map(([groupId, members]) => {
-                  const coordinator = members.find((m) => m.isCoordinator);
-                  return (
-                    <div
-                      key={groupId}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <Badge variant="outline" className="text-xs">
-                        {coordinator?.roomName || 'Unknown'}
-                      </Badge>
-                      <span className="text-muted-foreground">
-                        + {members.length - 1} member{members.length > 2 ? 's' : ''}
-                      </span>
-                      <div className="flex gap-1">
-                        {members
-                          .filter((m) => !m.isCoordinator)
-                          .slice(0, 3)
-                          .map((m) => (
-                            <span
-                              key={m.id}
-                              className="text-xs text-muted-foreground"
-                            >
-                              {m.roomName}
-                            </span>
-                          ))}
-                        {members.length > 4 && (
-                          <span className="text-xs text-muted-foreground">
-                            ...
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
+        {/* Offline Devices Warning */}
+        {stats.offline > 0 && (
+          <div className="mt-4 pt-4 border-t border-border-subtle">
+            <p className="text-sm text-destructive flex items-center gap-2">
+              <WifiOff className="w-4 h-4" />
+              {stats.offline} device{stats.offline > 1 ? 's' : ''} offline or unreachable
+            </p>
           </div>
         )}
       </CardContent>

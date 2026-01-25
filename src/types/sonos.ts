@@ -109,3 +109,61 @@ export interface GroupRequest {
   roomName: string;
   targetRoom: string;
 }
+
+// ============================================
+// Network Diagnostics Types
+// ============================================
+
+/** Connection type for a Sonos device */
+export type NetworkConnectionType = 'sonosnet' | 'wifi' | 'ethernet' | 'unknown';
+
+/** Signal quality levels */
+export type SignalQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'offline';
+
+/** Network diagnostics for a single device */
+export interface DeviceNetworkDiagnostics {
+  deviceId: string;
+  roomName: string;
+  ipAddress: string;
+  macAddress: string;
+  connectionType: NetworkConnectionType;
+  isWired: boolean;
+  snr?: number;
+  signalQuality: SignalQuality;
+  isReachable: boolean;
+  lastSeen: string;
+  modelNumber: string;
+  softwareVersion: string;
+  supportsSonosNet: boolean;
+}
+
+/** Network topology of all devices */
+export interface NetworkTopology {
+  devices: DeviceNetworkDiagnostics[];
+  hasSonosNet: boolean;
+  wiredDeviceIds: string[];
+  lastUpdated: string;
+}
+
+/** Summary of network health */
+export interface NetworkHealthSummary {
+  totalDevices: number;
+  onlineDevices: number;
+  offlineDevices: number;
+  sonosNetDevices: number;
+  wifiDevices: number;
+  wiredDevices: number;
+  poorSignalDevices: string[];
+  hasSonosNet: boolean;
+  overallHealth: 'healthy' | 'warning' | 'critical';
+  issues: NetworkIssue[];
+}
+
+/** A detected network issue */
+export interface NetworkIssue {
+  severity: 'info' | 'warning' | 'critical';
+  roomName?: string;
+  type: 'weak_signal' | 'device_offline' | 'wifi_only' | 'no_sonosnet';
+  message: string;
+  recommendation: string;
+}
