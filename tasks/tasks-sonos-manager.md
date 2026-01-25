@@ -150,80 +150,80 @@ Example: `- [ ] 1.1 Read file` → `- [x] 1.1 Read file`
 
 ### Phase 2: First-Run Wizard & PIN Authentication
 
-- [ ] **2.0 Create storage utilities** (traces to: FR-5, FR-9)
-  - [ ] 2.0.1 Create `src/types/config.ts` with `AppConfig` type (seedIp, pinHash, isConfigured)
-  - [ ] 2.0.2 Create `src/lib/storage.ts` with `getConfig()`, `setConfig()`, `clearConfig()` using localStorage
-  - [ ] 2.0.3 Create `src/lib/pin.ts` with `hashPin()`, `verifyPin()` using bcryptjs
-  - [ ] 2.0.4 Write unit tests for storage and PIN utilities
+- [x] **2.0 Create storage utilities** (traces to: FR-5, FR-9)
+  - [x] 2.0.1 Create `src/types/config.ts` with `AppConfig` type (seedIp, pinHash, isConfigured)
+  - [x] 2.0.2 Create `src/lib/storage.ts` with `getConfig()`, `setConfig()`, `clearConfig()` using localStorage
+  - [x] 2.0.3 Create `src/lib/pin.ts` with `hashPin()`, `verifyPin()` using bcryptjs
+  - [x] 2.0.4 Write unit tests for storage and PIN utilities
 
-- [ ] **2.1 Create authentication provider** (traces to: FR-8, US-8)
-  - [ ] 2.1.1 Create `src/providers/auth-provider.tsx` with context: `isAuthenticated`, `isConfigured`, `unlock()`, `lock()`
-  - [ ] 2.1.2 Provider checks localStorage on mount for existing config
-  - [ ] 2.1.3 If PIN configured, require unlock before showing dashboard
+- [x] **2.1 Create authentication provider** (traces to: FR-8, US-8)
+  - [x] 2.1.1 Create `src/providers/auth-provider.tsx` with context: `isAuthenticated`, `isConfigured`, `unlock()`, `lock()`
+  - [x] 2.1.2 Provider checks localStorage on mount for existing config
+  - [x] 2.1.3 If PIN configured, require unlock before showing dashboard
 
-- [ ] **2.2 Build first-run wizard** (traces to: FR-1, FR-2, FR-3, FR-4, FR-7, US-1)
-  - [ ] 2.2.1 Create `src/app/(auth)/setup/page.tsx` route
-  - [ ] 2.2.2 Create `src/components/setup/setup-wizard.tsx` with multi-step flow:
+- [x] **2.2 Build first-run wizard** (traces to: FR-1, FR-2, FR-3, FR-4, FR-7, US-1)
+  - [x] 2.2.1 Create `src/app/(auth)/setup/page.tsx` route
+  - [x] 2.2.2 Create `src/components/setup/setup-wizard.tsx` with multi-step flow:
     - Step 1: Welcome screen with explanation
     - Step 2: Enter Sonos device IP address
     - Step 3: Validate IP by fetching `/status/info` (via backend proxy)
     - Step 4: Show discovered devices count
     - Step 5: Optional PIN setup
     - Step 6: Success / Go to Dashboard
-  - [ ] 2.2.3 Create `src/components/setup/pin-setup.tsx` for PIN entry with confirmation
-  - [ ] 2.2.4 Add form validation with Zod (IP format, PIN min length)
-  - [ ] 2.2.5 Save config to localStorage on completion
-  - [ ] 2.2.6 Write tests for setup wizard component
+  - [x] 2.2.3 Create `src/components/setup/pin-setup.tsx` for PIN entry with confirmation
+  - [x] 2.2.4 Add form validation with Zod (IP format, PIN min length)
+  - [x] 2.2.5 Save config to localStorage on completion
+  - [x] 2.2.6 Write tests for setup wizard component
 
-- [ ] **2.3 Build PIN unlock screen** (traces to: FR-8, US-8)
-  - [ ] 2.3.1 Create `src/app/(auth)/unlock/page.tsx` route
-  - [ ] 2.3.2 Create `src/components/auth/pin-unlock.tsx` with PIN input and submit
-  - [ ] 2.3.3 Verify PIN against stored hash using `verifyPin()`
-  - [ ] 2.3.4 On success, update auth context and redirect to dashboard
-  - [ ] 2.3.5 Show error message on incorrect PIN (max 3 attempts before delay)
-  - [ ] 2.3.6 Write tests for PIN unlock component
+- [x] **2.3 Build PIN unlock screen** (traces to: FR-8, US-8)
+  - [x] 2.3.1 Create `src/app/(auth)/unlock/page.tsx` route
+  - [x] 2.3.2 Create `src/components/auth/pin-unlock.tsx` with PIN input and submit
+  - [x] 2.3.3 Verify PIN against stored hash using `verifyPin()`
+  - [x] 2.3.4 On success, update auth context and redirect to dashboard
+  - [x] 2.3.5 Show error message on incorrect PIN (max 3 attempts before delay)
+  - [x] 2.3.6 Write tests for PIN unlock component
 
-- [ ] **2.4 Implement app routing logic** (traces to: FR-1, FR-8)
-  - [ ] 2.4.1 Update `src/app/page.tsx` to check config status:
+- [x] **2.4 Implement app routing logic** (traces to: FR-1, FR-8)
+  - [x] 2.4.1 Update `src/app/page.tsx` to check config status:
     - No config → redirect to `/setup`
     - Config + PIN → redirect to `/unlock`
     - Config + no PIN → redirect to `/dashboard`
-  - [ ] 2.4.2 Wrap dashboard routes with auth check middleware/layout
+  - [x] 2.4.2 Wrap dashboard routes with auth check middleware/layout
 
 ---
 
 ### Phase 3: Dashboard Layout & Device List
 
-- [ ] **3.0 Create dashboard layout** (traces to: Design Considerations, DESIGN-15)
-  - [ ] 3.0.1 Create `src/app/(dashboard)/layout.tsx` with sidebar + main content area
-  - [ ] 3.0.2 Create `src/components/layout/sidebar.tsx` with navigation items: Dashboard, Diagnostics, Settings
-  - [ ] 3.0.3 Add collapsible sidebar functionality (64px collapsed, 240px expanded)
-  - [ ] 3.0.4 Create `src/components/layout/header.tsx` with page title and action buttons
-  - [ ] 3.0.5 Apply dark theme styles: bg-base for page, bg-surface for sidebar
-  - [ ] 3.0.6 Write tests for sidebar component
+- [x] **3.0 Create dashboard layout** (traces to: Design Considerations, DESIGN-15)
+  - [x] 3.0.1 Create `src/app/(dashboard)/layout.tsx` with sidebar + main content area
+  - [x] 3.0.2 Create `src/components/layout/sidebar.tsx` with navigation items: Dashboard, Diagnostics, Settings
+  - [x] 3.0.3 Add collapsible sidebar functionality (64px collapsed, 240px expanded)
+  - [x] 3.0.4 Create `src/components/layout/header.tsx` with page title and action buttons
+  - [x] 3.0.5 Apply dark theme styles: bg-base for page, bg-surface for sidebar
+  - [x] 3.0.6 Write tests for sidebar component
 
-- [ ] **3.1 Build device grid/list** (traces to: FR-10, FR-16, FR-17, US-2)
-  - [ ] 3.1.1 Create `src/app/(dashboard)/page.tsx` as main dashboard
-  - [ ] 3.1.2 Create `src/hooks/use-devices.ts` hook fetching `/zones` with React Query
-  - [ ] 3.1.3 Create `src/components/dashboard/device-grid.tsx` container with grid layout
-  - [ ] 3.1.4 Add sorting controls: by room name, status, model (FR-16)
-  - [ ] 3.1.5 Add filtering controls: by status, model type (FR-17)
-  - [ ] 3.1.6 Handle empty state when no devices found
-  - [ ] 3.1.7 Handle loading state with skeleton cards
-  - [ ] 3.1.8 Write tests for device grid component
+- [x] **3.1 Build device grid/list** (traces to: FR-10, FR-16, FR-17, US-2)
+  - [x] 3.1.1 Create `src/app/(dashboard)/page.tsx` as main dashboard
+  - [x] 3.1.2 Create `src/hooks/use-devices.ts` hook fetching `/zones` with React Query
+  - [x] 3.1.3 Create `src/components/dashboard/device-grid.tsx` container with grid layout
+  - [x] 3.1.4 Add sorting controls: by room name, status, model (FR-16)
+  - [x] 3.1.5 Add filtering controls: by status, model type (FR-17)
+  - [x] 3.1.6 Handle empty state when no devices found
+  - [x] 3.1.7 Handle loading state with skeleton cards
+  - [x] 3.1.8 Write tests for device grid component
 
-- [ ] **3.2 Build device card** (traces to: FR-11, FR-12, FR-13, FR-15, US-2)
-  - [ ] 3.2.1 Create `src/components/dashboard/device-card.tsx` with:
+- [x] **3.2 Build device card** (traces to: FR-11, FR-12, FR-13, FR-15, US-2)
+  - [x] 3.2.1 Create `src/components/dashboard/device-card.tsx` with:
     - Room name (heading)
     - Model name (caption)
     - IP address (muted)
     - Status indicator dot (playing=green, paused=yellow, idle=gray)
     - Volume level bar
-  - [ ] 3.2.2 Create `src/components/dashboard/now-playing.tsx` showing track title, artist, album art
-  - [ ] 3.2.3 Add visual distinction for playing devices (accent border, subtle glow) (FR-15)
-  - [ ] 3.2.4 Add click handler to select device (for keyboard controls)
-  - [ ] 3.2.5 Add hover state with slight lift animation
-  - [ ] 3.2.6 Write tests for device card component
+  - [x] 3.2.2 Create `src/components/dashboard/now-playing.tsx` showing track title, artist, album art
+  - [x] 3.2.3 Add visual distinction for playing devices (accent border, subtle glow) (FR-15)
+  - [x] 3.2.4 Add click handler to select device (for keyboard controls)
+  - [x] 3.2.5 Add hover state with slight lift animation
+  - [x] 3.2.6 Write tests for device card component
 
 ---
 
