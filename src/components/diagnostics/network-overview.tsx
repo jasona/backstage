@@ -8,6 +8,12 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   Wifi,
@@ -30,10 +36,11 @@ interface StatCardProps {
   label: string;
   value: number | string;
   sublabel?: string;
+  tooltip?: string;
   variant?: 'default' | 'success' | 'warning' | 'error';
 }
 
-function StatCard({ icon, label, value, sublabel, variant = 'default' }: StatCardProps) {
+function StatCard({ icon, label, value, sublabel, tooltip, variant = 'default' }: StatCardProps) {
   const variantStyles = {
     default: 'bg-surface border-border-subtle',
     success: 'bg-success/10 border-success/30',
@@ -48,8 +55,8 @@ function StatCard({ icon, label, value, sublabel, variant = 'default' }: StatCar
     error: 'text-destructive',
   };
 
-  return (
-    <Card className={cn('border', variantStyles[variant])}>
+  const card = (
+    <Card className={cn('border', variantStyles[variant], tooltip && 'cursor-help')}>
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
           <div className={cn('p-2 rounded-lg bg-muted/50', iconStyles[variant])}>
@@ -66,6 +73,21 @@ function StatCard({ icon, label, value, sublabel, variant = 'default' }: StatCar
       </CardContent>
     </Card>
   );
+
+  if (tooltip) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{card}</TooltipTrigger>
+          <TooltipContent>
+            <p className="max-w-xs">{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return card;
 }
 
 function LoadingSkeleton() {
@@ -144,16 +166,30 @@ export function NetworkOverview({ health, isLoading }: NetworkOverviewProps) {
                 </p>
               </div>
             </div>
-            <Badge
-              variant={healthVariant === 'success' ? 'default' : 'outline'}
-              className={cn(
-                healthVariant === 'warning' && 'border-warning text-warning',
-                healthVariant === 'error' && 'border-destructive text-destructive'
-              )}
-            >
-              <Activity className="w-3 h-3 mr-1" />
-              {health.hasSonosNet ? 'SonosNet Active' : 'WiFi Only'}
-            </Badge>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant={healthVariant === 'success' ? 'default' : 'outline'}
+                    className={cn(
+                      'cursor-help',
+                      healthVariant === 'warning' && 'border-warning text-warning',
+                      healthVariant === 'error' && 'border-destructive text-destructive'
+                    )}
+                  >
+                    <Activity className="w-3 h-3 mr-1" />
+                    {health.hasSonosNet ? 'SonosNet Active' : 'WiFi Only'}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">
+                    {health.hasSonosNet
+                      ? 'A wired speaker creates a dedicated SonosNet mesh network for better stability'
+                      : 'All speakers use your WiFi. Connect one speaker via ethernet for better reliability'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </CardContent>
       </Card>
@@ -165,6 +201,7 @@ export function NetworkOverview({ health, isLoading }: NetworkOverviewProps) {
           label="Online"
           value={health.onlineDevices}
           sublabel={health.offlineDevices > 0 ? `${health.offlineDevices} offline` : undefined}
+          tooltip="Speakers currently connected and responding on your network"
           variant={health.offlineDevices > 0 ? 'warning' : 'success'}
         />
 
@@ -173,6 +210,7 @@ export function NetworkOverview({ health, isLoading }: NetworkOverviewProps) {
           label="Wired"
           value={health.wiredDevices}
           sublabel="Ethernet connected"
+          tooltip="Speakers connected via ethernet cable. Wired speakers create a SonosNet mesh for other speakers to use."
         />
 
         <StatCard
@@ -180,6 +218,7 @@ export function NetworkOverview({ health, isLoading }: NetworkOverviewProps) {
           label="SonosNet"
           value={health.sonosNetDevices}
           sublabel="Mesh network"
+          tooltip="Speakers using SonosNet - Sonos's dedicated wireless mesh network. More reliable than WiFi for audio streaming."
         />
 
         <StatCard
@@ -187,6 +226,7 @@ export function NetworkOverview({ health, isLoading }: NetworkOverviewProps) {
           label="WiFi"
           value={health.wifiDevices}
           sublabel="Direct WiFi"
+          tooltip="Speakers connected directly to your WiFi network. May experience dropouts if WiFi is congested."
           variant={!health.hasSonosNet && health.wifiDevices > 0 ? 'warning' : 'default'}
         />
       </div>

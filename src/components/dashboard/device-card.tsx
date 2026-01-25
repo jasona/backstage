@@ -10,6 +10,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   Play,
@@ -160,29 +166,42 @@ export function DeviceCard({
                 {device.roomName}
               </h3>
               {isInGroup && (
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'text-xs px-1.5 py-0 cursor-pointer hover:bg-accent transition-colors',
-                    device.isCoordinator
-                      ? 'border-primary/50 text-primary'
-                      : 'border-border-subtle text-muted-foreground'
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onGroupManage?.(device);
-                  }}
-                >
-                  {device.isCoordinator ? (
-                    <Crown className="w-3 h-3 mr-1" />
-                  ) : (
-                    <Users className="w-3 h-3 mr-1" />
-                  )}
-                  {device.isCoordinator ? 'Leading' : zone?.coordinatorRoom}
-                  <span className="ml-1 text-muted-foreground">
-                    +{zone!.memberIds.length - 1}
-                  </span>
-                </Badge>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-xs px-1.5 py-0 cursor-pointer hover:bg-accent transition-colors',
+                          device.isCoordinator
+                            ? 'border-primary/50 text-primary'
+                            : 'border-border-subtle text-muted-foreground'
+                        )}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onGroupManage?.(device);
+                        }}
+                      >
+                        {device.isCoordinator ? (
+                          <Crown className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Users className="w-3 h-3 mr-1" />
+                        )}
+                        {device.isCoordinator ? 'Leading' : zone?.coordinatorRoom}
+                        <span className="ml-1 text-muted-foreground">
+                          +{zone!.memberIds.length - 1}
+                        </span>
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {device.isCoordinator ? (
+                        <p>Group leader - controls playback for {zone!.memberIds.length} speakers</p>
+                      ) : (
+                        <p>Grouped with {zone?.coordinatorRoom} - follows its playback</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
             <p className="text-xs text-muted-foreground truncate">
@@ -206,14 +225,26 @@ export function DeviceCard({
           )}
 
           {/* Status indicator */}
-          <div
-            className={cn(
-              'w-2 h-2 rounded-full flex-shrink-0 mt-1.5 transition-colors duration-300',
-              isPlaying && 'bg-success animate-pulse',
-              device.playbackState === 'PAUSED_PLAYBACK' && 'bg-warning',
-              device.playbackState === 'STOPPED' && 'bg-muted-foreground'
-            )}
-          />
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={cn(
+                    'w-2 h-2 rounded-full flex-shrink-0 mt-1.5 transition-colors duration-300',
+                    isPlaying && 'bg-success animate-pulse',
+                    device.playbackState === 'PAUSED_PLAYBACK' && 'bg-warning',
+                    device.playbackState === 'STOPPED' && 'bg-muted-foreground'
+                  )}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                {isPlaying && <p>Playing</p>}
+                {device.playbackState === 'PAUSED_PLAYBACK' && <p>Paused</p>}
+                {device.playbackState === 'STOPPED' && <p>Stopped</p>}
+                {device.playbackState === 'TRANSITIONING' && <p>Loading...</p>}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         {/* Now Playing */}

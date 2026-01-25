@@ -6,7 +6,6 @@
  */
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +16,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -47,9 +52,10 @@ interface InfoRowProps {
   label: string;
   value: string | number | undefined;
   copyable?: boolean;
+  tooltip?: string;
 }
 
-function InfoRow({ icon, label, value, copyable }: InfoRowProps) {
+function InfoRow({ icon, label, value, copyable, tooltip }: InfoRowProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
@@ -61,8 +67,11 @@ function InfoRow({ icon, label, value, copyable }: InfoRowProps) {
     }
   }, [value]);
 
-  return (
-    <div className="flex items-center justify-between py-2 border-b border-border-subtle last:border-0">
+  const content = (
+    <div className={cn(
+      "flex items-center justify-between py-2 border-b border-border-subtle last:border-0",
+      tooltip && "cursor-help"
+    )}>
       <div className="flex items-center gap-2 text-muted-foreground">
         {icon}
         <span className="text-sm">{label}</span>
@@ -88,6 +97,21 @@ function InfoRow({ icon, label, value, copyable }: InfoRowProps) {
       </div>
     </div>
   );
+
+  if (tooltip) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{content}</TooltipTrigger>
+          <TooltipContent>
+            <p className="max-w-xs">{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return content;
 }
 
 export function DeviceInfo({ device, isLoading }: DeviceInfoProps) {
@@ -170,6 +194,9 @@ export function DeviceInfo({ device, isLoading }: DeviceInfoProps) {
               icon={device.isCoordinator ? <Crown className="w-4 h-4" /> : <Users className="w-4 h-4" />}
               label="Group Role"
               value={device.isCoordinator ? 'Coordinator' : 'Member'}
+              tooltip={device.isCoordinator
+                ? 'This speaker leads the group and controls playback for all members'
+                : 'This speaker is part of a group and follows the coordinator\'s playback'}
             />
             {device.groupId && (
               <InfoRow

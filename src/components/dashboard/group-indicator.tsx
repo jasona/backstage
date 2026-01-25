@@ -6,6 +6,12 @@
  */
 
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Users, Crown } from 'lucide-react';
 
@@ -32,25 +38,38 @@ export function GroupIndicator({
   }
 
   return (
-    <Badge
-      variant="outline"
-      className={cn(
-        'text-xs px-1.5 py-0 gap-1 transition-colors',
-        isCoordinator
-          ? 'border-primary/50 text-primary'
-          : 'border-border-subtle text-muted-foreground',
-        className
-      )}
-    >
-      {isCoordinator ? (
-        <Crown className="w-3 h-3" />
-      ) : (
-        <Users className="w-3 h-3" />
-      )}
-      <span className="truncate max-w-[80px]">
-        {isCoordinator ? 'Leading' : groupName}
-      </span>
-      <span className="text-muted-foreground">+{memberCount - 1}</span>
-    </Badge>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge
+            variant="outline"
+            className={cn(
+              'text-xs px-1.5 py-0 gap-1 transition-colors cursor-help',
+              isCoordinator
+                ? 'border-primary/50 text-primary'
+                : 'border-border-subtle text-muted-foreground',
+              className
+            )}
+          >
+            {isCoordinator ? (
+              <Crown className="w-3 h-3" />
+            ) : (
+              <Users className="w-3 h-3" />
+            )}
+            <span className="truncate max-w-[80px]">
+              {isCoordinator ? 'Leading' : groupName}
+            </span>
+            <span className="text-muted-foreground">+{memberCount - 1}</span>
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent>
+          {isCoordinator ? (
+            <p>Group leader - controls playback for {memberCount} speakers</p>
+          ) : (
+            <p>Grouped with {groupName} - follows its playback</p>
+          )}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

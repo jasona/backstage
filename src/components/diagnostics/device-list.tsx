@@ -5,10 +5,15 @@
  * Shows detailed device information in a table/card format.
  */
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   Speaker,
@@ -87,9 +92,18 @@ export function DeviceList({ devices, isLoading }: DeviceListProps) {
                       {device.roomName}
                     </h3>
                     {device.isCoordinator && (
-                      <Badge variant="outline" className="text-xs">
-                        Coordinator
-                      </Badge>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge variant="outline" className="text-xs cursor-help">
+                              Coordinator
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Group leader - controls playback for grouped speakers</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">

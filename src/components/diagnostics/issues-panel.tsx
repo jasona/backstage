@@ -10,6 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   AlertCircle,
@@ -81,12 +87,23 @@ function IssueCard({ issue }: { issue: NetworkIssue }) {
                   {issue.roomName}
                 </span>
               )}
-              <Badge
-                variant="outline"
-                className={cn('text-xs', severityBadgeStyles[issue.severity])}
-              >
-                {issue.severity}
-              </Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={cn('text-xs cursor-help', severityBadgeStyles[issue.severity])}
+                    >
+                      {issue.severity}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {issue.severity === 'critical' && <p>Requires immediate attention</p>}
+                    {issue.severity === 'warning' && <p>May cause playback issues</p>}
+                    {issue.severity === 'info' && <p>Informational - no immediate action needed</p>}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
