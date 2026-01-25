@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sonos Manager
+
+A modern, Linear-style web application for managing and monitoring large Sonos installations. Built with Next.js, TypeScript, and shadcn/ui.
+
+## Features
+
+- Device discovery from a single known IP address
+- Real-time status monitoring for all devices
+- Low-latency volume and playback controls
+- Device grouping management
+- Command palette (Cmd/Ctrl+K) for quick actions
+- Network diagnostics and signal matrix
+- Dark mode by default
+
+## Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- A Sonos system on your local network
+- [node-sonos-http-api](https://github.com/jishi/node-sonos-http-api) (backend)
+
+## Backend Setup (node-sonos-http-api)
+
+This application requires [node-sonos-http-api](https://github.com/jishi/node-sonos-http-api) as a backend to communicate with your Sonos devices.
+
+### Installation
+
+1. Clone the node-sonos-http-api repository:
+   ```bash
+   git clone https://github.com/jishi/node-sonos-http-api.git
+   cd node-sonos-http-api
+   npm install
+   ```
+
+2. Start the backend:
+   ```bash
+   npm start
+   ```
+
+3. Verify it's running by opening [http://localhost:5005/zones](http://localhost:5005/zones) in your browser. You should see a JSON response with your Sonos devices.
+
+### Configuration
+
+The backend runs on port 5005 by default. If you need to change this, update `NEXT_PUBLIC_SONOS_API_URL` in your `.env.local` file.
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. Copy the environment file:
+   ```bash
+   cp .env.example .env.local
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. On first run, you'll be guided through a setup wizard to configure your Sonos connection.
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_SONOS_API_URL` | URL for the node-sonos-http-api backend | `http://localhost:5005` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Keyboard Shortcuts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Shortcut | Action |
+|----------|--------|
+| `Cmd/Ctrl + K` | Open command palette |
+| `Escape` | Close modal/panel |
+| `Space` | Toggle play/pause (selected device) |
+| `Arrow Up/Down` | Adjust volume (selected device) |
+| `/` | Focus search |
+| `Cmd/Ctrl + Shift + P` | Pause all devices |
+| `Cmd/Ctrl + Shift + R` | Resume all devices |
 
-## Deploy on Vercel
+## Tech Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [Next.js 14+](https://nextjs.org/) - React framework
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [shadcn/ui](https://ui.shadcn.com/) - UI components
+- [React Query](https://tanstack.com/query) - Data fetching
+- [Zod](https://zod.dev/) - Schema validation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Known Limitations
+
+- Requires node-sonos-http-api backend running locally
+- Uses undocumented Sonos local APIs that may change with firmware updates
+- Local network access only (no remote access in v1)
+- Devices must be on the same subnet as the backend
+
+## Troubleshooting
+
+### Devices not discovered
+- Ensure node-sonos-http-api is running and accessible
+- Check that your Sonos devices are on the same network
+- Try accessing `http://localhost:5005/zones` directly to verify backend connectivity
+
+### Volume control lag
+- Check network connectivity between the backend and Sonos devices
+- Ensure no firewall is blocking port 1400 (Sonos control port)
+
+### Backend won't start
+- Make sure no other service is using port 5005
+- Check that your network supports multicast (required for Sonos discovery)
+
+## License
+
+MIT

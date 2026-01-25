@@ -134,17 +134,17 @@ Example: `- [ ] 1.1 Read file` → `- [x] 1.1 Read file`
   - [x] 1.7 Set up `.env.local` with `NEXT_PUBLIC_SONOS_API_URL=http://localhost:5005`
   - [x] 1.8 Create `.env.example` documenting required environment variables
 
-- [ ] **1.1 Set up node-sonos-http-api backend** (traces to: Technical Considerations)
-  - [ ] 1.1.1 Document installation steps for node-sonos-http-api in README
-  - [ ] 1.1.2 Create npm script to start backend: `"backend": "cd ../node-sonos-http-api && npm start"` (or document separate terminal)
-  - [ ] 1.1.3 Verify backend runs and discovers devices at `http://localhost:5005/zones`
+- [x] **1.1 Set up node-sonos-http-api backend** (traces to: Technical Considerations)
+  - [x] 1.1.1 Document installation steps for node-sonos-http-api in README
+  - [x] 1.1.2 Create npm script to start backend: `"backend": "cd ../node-sonos-http-api && npm start"` (or document separate terminal)
+  - [x] 1.1.3 Verify backend runs and discovers devices at `http://localhost:5005/zones`
 
-- [ ] **1.2 Create Sonos API client** (traces to: FR-3, FR-4)
-  - [ ] 1.2.1 Create `src/types/sonos.ts` with types: `SonosDevice`, `SonosZone`, `PlaybackState`, `NowPlaying`
-  - [ ] 1.2.2 Create `src/lib/sonos-api.ts` with functions: `getZones()`, `getDeviceStatus()`, `play()`, `pause()`, `setVolume()`, `next()`, `previous()`, `joinGroup()`, `leaveGroup()`, `pauseAll()`, `resumeAll()`
-  - [ ] 1.2.3 Add Zod schemas for API response validation
-  - [ ] 1.2.4 Write unit tests for `sonos-api.ts` with mocked fetch responses
-  - [ ] 1.2.5 Create `src/hooks/use-sonos.ts` hook wrapping API client with React Query
+- [x] **1.2 Create Sonos API client** (traces to: FR-3, FR-4)
+  - [x] 1.2.1 Create `src/types/sonos.ts` with types: `SonosDevice`, `SonosZone`, `PlaybackState`, `NowPlaying`
+  - [x] 1.2.2 Create `src/lib/sonos-api.ts` with functions: `getZones()`, `getDeviceStatus()`, `play()`, `pause()`, `setVolume()`, `next()`, `previous()`, `joinGroup()`, `leaveGroup()`, `pauseAll()`, `resumeAll()`
+  - [x] 1.2.3 Add Zod schemas for API response validation
+  - [x] 1.2.4 Write unit tests for `sonos-api.ts` with mocked fetch responses
+  - [x] 1.2.5 Create `src/hooks/use-sonos.ts` hook wrapping API client with React Query
 
 ---
 
