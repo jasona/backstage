@@ -36,9 +36,9 @@ export const PlayModeSchema = z.object({
 export const DeviceStateSchema = z.object({
   volume: z.number().default(0),
   mute: z.boolean().default(false),
-  currentTrack: NowPlayingSchema.default({}),
+  currentTrack: NowPlayingSchema.optional(),
   playbackState: z.enum(['PLAYING', 'PAUSED_PLAYBACK', 'STOPPED', 'TRANSITIONING']).default('STOPPED'),
-  playMode: PlayModeSchema.default({}),
+  playMode: PlayModeSchema.optional(),
 });
 
 export const GroupStateSchema = z.object({
@@ -50,8 +50,8 @@ export const SonosDeviceSchema = z.object({
   uuid: z.string(),
   roomName: z.string(),
   coordinator: z.boolean().default(false),
-  groupState: GroupStateSchema.default({}),
-  state: DeviceStateSchema.default({}),
+  groupState: GroupStateSchema.optional(),
+  state: DeviceStateSchema.optional(),
 });
 
 export const SonosZoneSchema = z.object({
@@ -139,6 +139,7 @@ export function transformZonesToDevices(zones: ZonesResponse): DeviceStatus[] {
   const devices: DeviceStatus[] = [];
 
   for (const zone of zones) {
+    const coordState = zone.coordinator.state;
     // Add coordinator
     devices.push({
       id: zone.coordinator.uuid,
@@ -147,17 +148,18 @@ export function transformZonesToDevices(zones: ZonesResponse): DeviceStatus[] {
       ipAddress: '', // IP not in zones response
       isCoordinator: true,
       groupId: zone.uuid,
-      volume: zone.coordinator.state.volume,
-      muted: zone.coordinator.state.mute,
-      playbackState: zone.coordinator.state.playbackState as PlaybackState,
-      nowPlaying: zone.coordinator.state.currentTrack.title
-        ? zone.coordinator.state.currentTrack
+      volume: coordState?.volume ?? 0,
+      muted: coordState?.mute ?? false,
+      playbackState: (coordState?.playbackState ?? 'STOPPED') as PlaybackState,
+      nowPlaying: coordState?.currentTrack?.title
+        ? coordState.currentTrack
         : undefined,
     });
 
     // Add members (excluding coordinator)
     for (const member of zone.members) {
       if (member.uuid !== zone.coordinator.uuid) {
+        const memberState = member.state;
         devices.push({
           id: member.uuid,
           roomName: member.roomName,
@@ -165,11 +167,11 @@ export function transformZonesToDevices(zones: ZonesResponse): DeviceStatus[] {
           ipAddress: '',
           isCoordinator: false,
           groupId: zone.uuid,
-          volume: member.state.volume,
-          muted: member.state.mute,
-          playbackState: member.state.playbackState as PlaybackState,
-          nowPlaying: member.state.currentTrack.title
-            ? member.state.currentTrack
+          volume: memberState?.volume ?? 0,
+          muted: memberState?.mute ?? false,
+          playbackState: (memberState?.playbackState ?? 'STOPPED') as PlaybackState,
+          nowPlaying: memberState?.currentTrack?.title
+            ? memberState.currentTrack
             : undefined,
         });
       }
@@ -183,19 +185,23 @@ export function transformZonesToDevices(zones: ZonesResponse): DeviceStatus[] {
  * Transform zones response into zone statuses
  */
 export function transformZonesToZoneStatuses(zones: ZonesResponse): ZoneStatus[] {
-  return zones.map((zone) => ({
-    id: zone.uuid,
-    coordinatorId: zone.coordinator.uuid,
-    coordinatorRoom: zone.coordinator.roomName,
-    memberIds: zone.members.map((m) => m.uuid),
-    memberRooms: zone.members.map((m) => m.roomName),
-    volume: zone.coordinator.groupState.volume,
-    muted: zone.coordinator.groupState.mute,
-    playbackState: zone.coordinator.state.playbackState as PlaybackState,
-    nowPlaying: zone.coordinator.state.currentTrack.title
-      ? zone.coordinator.state.currentTrack
-      : undefined,
-  }));
+  return zones.map((zone) => {
+    const coordState = zone.coordinator.state;
+    const groupState = zone.coordinator.groupState;
+    return {
+      id: zone.uuid,
+      coordinatorId: zone.coordinator.uuid,
+      coordinatorRoom: zone.coordinator.roomName,
+      memberIds: zone.members.map((m) => m.uuid),
+      memberRooms: zone.members.map((m) => m.roomName),
+      volume: groupState?.volume ?? 0,
+      muted: groupState?.mute ?? false,
+      playbackState: (coordState?.playbackState ?? 'STOPPED') as PlaybackState,
+      nowPlaying: coordState?.currentTrack?.title
+        ? coordState.currentTrack
+        : undefined,
+    };
+  });
 }
 
 /**

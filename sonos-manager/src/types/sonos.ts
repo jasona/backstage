@@ -23,16 +23,16 @@ export interface SonosDevice {
   uuid: string;
   roomName: string;
   coordinator: boolean;
-  groupState: {
+  groupState?: {
     volume: number;
     mute: boolean;
   };
-  state: {
+  state?: {
     volume: number;
     mute: boolean;
-    currentTrack: NowPlaying;
+    currentTrack?: NowPlaying;
     playbackState: PlaybackState;
-    playMode: {
+    playMode?: {
       repeat: 'none' | 'one' | 'all';
       shuffle: boolean;
       crossfade: boolean;
