@@ -22,7 +22,7 @@ export interface NowPlaying {
 export interface SonosDevice {
   uuid: string;
   roomName: string;
-  coordinator: boolean;
+  coordinator: string; // UUID of the coordinator device
   groupState?: {
     volume: number;
     mute: boolean;

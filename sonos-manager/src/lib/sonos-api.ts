@@ -49,7 +49,7 @@ export const GroupStateSchema = z.object({
 export const SonosDeviceSchema = z.object({
   uuid: z.string(),
   roomName: z.string(),
-  coordinator: z.boolean().default(false),
+  coordinator: z.string(), // UUID of the coordinator device
   groupState: GroupStateSchema.optional(),
   state: DeviceStateSchema.optional(),
 });
