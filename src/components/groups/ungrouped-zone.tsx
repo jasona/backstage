@@ -16,12 +16,26 @@ interface UngroupedZoneProps {
   devices: DeviceStatus[];
   onVolumeChange?: (roomName: string, volume: number) => void;
   onToggleMute?: (roomName: string) => void;
+  onPlayPause?: (roomName: string) => void;
+  onNext?: (roomName: string) => void;
+  onPrevious?: (roomName: string) => void;
+  onPickMusic?: (roomName: string) => void;
+  playPauseLoadingRoom?: string;
+  nextLoadingRoom?: string;
+  previousLoadingRoom?: string;
 }
 
 export function UngroupedZone({
   devices,
   onVolumeChange,
   onToggleMute,
+  onPlayPause,
+  onNext,
+  onPrevious,
+  onPickMusic,
+  playPauseLoadingRoom,
+  nextLoadingRoom,
+  previousLoadingRoom,
 }: UngroupedZoneProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: 'ungrouped',
@@ -56,8 +70,16 @@ export function UngroupedZone({
                 key={device.id}
                 device={device}
                 isDroppable={true}
+                showPlaybackControls={true}
                 onVolumeChange={onVolumeChange}
                 onToggleMute={onToggleMute}
+                onPlayPause={onPlayPause}
+                onNext={onNext}
+                onPrevious={onPrevious}
+                onPickMusic={onPickMusic}
+                isPlayPauseLoading={playPauseLoadingRoom === device.roomName}
+                isNextLoading={nextLoadingRoom === device.roomName}
+                isPreviousLoading={previousLoadingRoom === device.roomName}
               />
             ))}
           </div>

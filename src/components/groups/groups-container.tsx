@@ -459,6 +459,13 @@ export function GroupsContainer() {
           devices={ungroupedDevices}
           onVolumeChange={handleDeviceVolumeChange}
           onToggleMute={handleToggleMute}
+          onPlayPause={handlePlayPause}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+          onPickMusic={handlePickMusic}
+          playPauseLoadingRoom={playPauseMutation.isPending ? playPauseMutation.variables : undefined}
+          nextLoadingRoom={nextMutation.isPending ? nextMutation.variables : undefined}
+          previousLoadingRoom={previousMutation.isPending ? previousMutation.variables : undefined}
         />
       </div>
 

@@ -19,7 +19,18 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Crown, GripVertical, Volume2, VolumeX } from 'lucide-react';
+import {
+  Crown,
+  GripVertical,
+  Volume2,
+  VolumeX,
+  Play,
+  Pause,
+  SkipForward,
+  SkipBack,
+  Music,
+  Loader2,
+} from 'lucide-react';
 import type { DeviceStatus } from '@/types/sonos';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
@@ -29,16 +40,34 @@ interface DraggableDeviceProps {
   device: DeviceStatus;
   /** Whether this device can be dropped onto (usually only ungrouped devices) */
   isDroppable?: boolean;
+  /** Whether to show playback controls (for ungrouped devices) */
+  showPlaybackControls?: boolean;
   onVolumeChange?: (roomName: string, volume: number) => void;
   onToggleMute?: (roomName: string) => void;
+  onPlayPause?: (roomName: string) => void;
+  onNext?: (roomName: string) => void;
+  onPrevious?: (roomName: string) => void;
+  onPickMusic?: (roomName: string) => void;
+  isPlayPauseLoading?: boolean;
+  isNextLoading?: boolean;
+  isPreviousLoading?: boolean;
 }
 
 export function DraggableDevice({
   device,
   isDroppable = false,
+  showPlaybackControls = false,
   onVolumeChange,
   onToggleMute,
+  onPlayPause,
+  onNext,
+  onPrevious,
+  onPickMusic,
+  isPlayPauseLoading = false,
+  isNextLoading = false,
+  isPreviousLoading = false,
 }: DraggableDeviceProps) {
+  const isPlaying = device.playbackState === 'PLAYING';
   const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({
     id: device.id,
     data: { device },
@@ -106,6 +135,22 @@ export function DraggableDevice({
     [device.roomName, onToggleMute]
   );
 
+  const handlePlayPause = useCallback(() => {
+    onPlayPause?.(device.roomName);
+  }, [device.roomName, onPlayPause]);
+
+  const handleNext = useCallback(() => {
+    onNext?.(device.roomName);
+  }, [device.roomName, onNext]);
+
+  const handlePrevious = useCallback(() => {
+    onPrevious?.(device.roomName);
+  }, [device.roomName, onPrevious]);
+
+  const handlePickMusic = useCallback(() => {
+    onPickMusic?.(device.roomName);
+  }, [device.roomName, onPickMusic]);
+
   const style = {
     transform: CSS.Translate.toString(transform),
   };
@@ -162,6 +207,92 @@ export function DraggableDevice({
               </div>
             </div>
           </div>
+
+          {/* Now Playing (for ungrouped devices with playback controls) */}
+          {showPlaybackControls && (
+            <div className="text-xs text-muted-foreground truncate">
+              {device.nowPlaying?.title ? (
+                <span>
+                  {device.nowPlaying.title}
+                  {device.nowPlaying.artist && ` - ${device.nowPlaying.artist}`}
+                </span>
+              ) : (
+                <span>Not playing</span>
+              )}
+            </div>
+          )}
+
+          {/* Playback Controls (for ungrouped devices) */}
+          {showPlaybackControls && (
+            <div className="flex items-center justify-center gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      onClick={handlePickMusic}
+                    >
+                      <Music className="w-3.5 h-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Change music</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                onClick={handlePrevious}
+                disabled={isPreviousLoading}
+              >
+                {isPreviousLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <SkipBack className="w-3.5 h-3.5" />
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'h-8 w-8',
+                  isPlaying
+                    ? 'text-primary hover:text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+                onClick={handlePlayPause}
+                disabled={isPlayPauseLoading}
+              >
+                {isPlayPauseLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="w-4 h-4" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                onClick={handleNext}
+                disabled={isNextLoading}
+              >
+                {isNextLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <SkipForward className="w-3.5 h-3.5" />
+                )}
+              </Button>
+            </div>
+          )}
 
           {/* Volume Control */}
           <div className="flex items-center gap-2">
