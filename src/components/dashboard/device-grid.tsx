@@ -5,7 +5,7 @@
  * Displays all devices with sorting and filtering.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { DeviceCard } from './device-card';
 import { GroupManager } from './group-manager';
 import { GroupSelectionBar } from './group-selection-bar';
@@ -64,9 +64,34 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   const joinGroupMutation = useJoinGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<SortField>('roomName');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useState<SortField>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dashboard-sort-field');
+      if (saved === 'roomName' || saved === 'status' || saved === 'model') {
+        return saved;
+      }
+    }
+    return 'roomName';
+  });
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dashboard-sort-direction');
+      if (saved === 'asc' || saved === 'desc') {
+        return saved;
+      }
+    }
+    return 'asc';
+  });
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+
+  // Persist sort preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem('dashboard-sort-field', sortField);
+  }, [sortField]);
+
+  useEffect(() => {
+    localStorage.setItem('dashboard-sort-direction', sortDirection);
+  }, [sortDirection]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [groupManageDevice, setGroupManageDevice] = useState<DeviceStatus | null>(null);
   const [musicPickerRoom, setMusicPickerRoom] = useState<string | null>(null);
