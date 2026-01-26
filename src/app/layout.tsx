@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sonos Manager",
+  title: "Backstage",
   description: "Manage and monitor your Sonos devices",
 };
 

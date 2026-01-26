@@ -1,4 +1,4 @@
-# Sonos Manager
+# Backstage
 
 A modern web application for managing and monitoring large Sonos speaker installations. Built with Next.js 14+, TypeScript, and Tailwind CSS.
 
@@ -80,12 +80,12 @@ npm start
 
 Verify it's running by opening [http://localhost:5005/zones](http://localhost:5005/zones) in your browser.
 
-### 2. Set up Sonos Manager
+### 2. Set up Backstage
 
 ```bash
 # Clone this repository
-git clone https://github.com/yourusername/sonos-manager.git
-cd sonos-manager
+git clone https://github.com/jasona/backstage.git
+cd backstage
 
 # Install dependencies
 npm install
@@ -119,7 +119,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 On first launch, the setup wizard will guide you through:
 
-1. **Welcome** - Introduction to Sonos Manager
+1. **Welcome** - Introduction to Backstage
 2. **Backend URL** - Verify connection to node-sonos-http-api
 3. **Device Discovery** - Confirm your Sonos devices are found
 4. **PIN Setup** (optional) - Set a PIN to protect the dashboard
@@ -140,7 +140,7 @@ On first launch, the setup wizard will guide you through:
 ## Project Structure
 
 ```
-sonos-manager/
+backstage/
 ├── src/
 │   ├── app/                    # Next.js App Router pages
 │   │   ├── dashboard/          # Dashboard routes

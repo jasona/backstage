@@ -5,7 +5,7 @@
 
 import type { AppConfig } from '@/types/config';
 
-const STORAGE_KEY = 'sonos-manager-config';
+const STORAGE_KEY = 'backstage-config';
 
 /**
  * Get the current app configuration from localStorage

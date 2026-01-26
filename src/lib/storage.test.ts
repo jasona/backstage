@@ -106,7 +106,7 @@ describe('Storage Utilities', () => {
     it('should remove config from localStorage', () => {
       clearConfig();
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('sonos-manager-config');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('backstage-config');
     });
   });
 

@@ -64,7 +64,7 @@ export function Sidebar({ defaultCollapsed = false }: SidebarProps) {
           </div>
           {!isCollapsed && (
             <span className="font-semibold text-foreground truncate">
-              Sonos Manager
+              Backstage
             </span>
           )}
         </div>

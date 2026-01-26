@@ -111,7 +111,7 @@ export function SetupWizard() {
               <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
                 <Wifi className="w-8 h-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Welcome to Sonos Manager</CardTitle>
+              <CardTitle className="text-2xl">Welcome to Backstage</CardTitle>
               <CardDescription className="text-base">
                 A modern dashboard for managing your Sonos devices.
                 Let&apos;s get you set up.

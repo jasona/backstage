@@ -1,5 +1,5 @@
 /**
- * Sonos device and zone types for the Sonos Manager application.
+ * Sonos device and zone types for the Backstage application.
  * These types correspond to the node-sonos-http-api response formats.
  */
 
