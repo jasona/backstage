@@ -208,9 +208,9 @@ export function DraggableDevice({
             </div>
           </div>
 
-          {/* Now Playing (for ungrouped devices with playback controls) */}
+          {/* Now Playing (for ungrouped devices with playback controls) - fixed height */}
           {showPlaybackControls && (
-            <div className="text-xs text-muted-foreground truncate">
+            <div className="text-xs text-muted-foreground truncate h-4">
               {device.nowPlaying?.title ? (
                 <span>
                   {device.nowPlaying.title}

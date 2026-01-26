@@ -58,32 +58,34 @@ export function GroupHeader({ zone, className }: GroupHeaderProps) {
         </TooltipProvider>
       </div>
 
-      {/* Now playing */}
-      {hasNowPlaying ? (
-        <div className="flex items-start gap-2">
-          <div
-            className={cn(
-              'w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5',
-              isPlaying && 'bg-success animate-pulse',
-              zone.playbackState === 'PAUSED_PLAYBACK' && 'bg-warning',
-              zone.playbackState === 'STOPPED' && 'bg-muted-foreground'
-            )}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground truncate">
-              {zone.nowPlaying?.title}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {zone.nowPlaying?.artist}
-            </p>
+      {/* Now playing - fixed height container */}
+      <div className="h-[38px]">
+        {hasNowPlaying ? (
+          <div className="flex items-start gap-2">
+            <div
+              className={cn(
+                'w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5',
+                isPlaying && 'bg-success animate-pulse',
+                zone.playbackState === 'PAUSED_PLAYBACK' && 'bg-warning',
+                zone.playbackState === 'STOPPED' && 'bg-muted-foreground'
+              )}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground truncate">
+                {zone.nowPlaying?.title}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {zone.nowPlaying?.artist}
+              </p>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Music className="w-3.5 h-3.5" />
-          <span className="text-sm">Not playing</span>
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Music className="w-3.5 h-3.5" />
+            <span className="text-sm">Not playing</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -274,22 +274,22 @@ export function DeviceCard({
           </TooltipProvider>
         </div>
 
-        {/* Now Playing */}
-        {hasNowPlaying && (
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium text-foreground truncate">
-              {device.nowPlaying?.title}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {device.nowPlaying?.artist}
-              {device.nowPlaying?.album && ` • ${device.nowPlaying.album}`}
-            </p>
-          </div>
-        )}
-
-        {!hasNowPlaying && (
-          <p className="text-sm text-muted-foreground">Not playing</p>
-        )}
+        {/* Now Playing - fixed height container */}
+        <div className="space-y-0.5 h-[38px]">
+          {hasNowPlaying ? (
+            <>
+              <p className="text-sm font-medium text-foreground truncate">
+                {device.nowPlaying?.title}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {device.nowPlaying?.artist}
+                {device.nowPlaying?.album && ` • ${device.nowPlaying.album}`}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">Not playing</p>
+          )}
+        </div>
 
         {/* Playback Controls */}
         <div className="flex items-center justify-center gap-1">
