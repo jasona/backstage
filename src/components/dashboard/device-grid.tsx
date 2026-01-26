@@ -9,6 +9,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { DeviceCard } from './device-card';
 import { GroupManager } from './group-manager';
 import { GroupSelectionBar } from './group-selection-bar';
+import { MusicPicker } from './music-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -68,6 +69,7 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [groupManageDevice, setGroupManageDevice] = useState<DeviceStatus | null>(null);
+  const [musicPickerRoom, setMusicPickerRoom] = useState<string | null>(null);
 
   // Multi-select state for batch grouping
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -87,6 +89,11 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   // Handle group manage click
   const handleGroupManage = useCallback((device: DeviceStatus) => {
     setGroupManageDevice(device);
+  }, []);
+
+  // Handle music picker open
+  const handlePickMusic = useCallback((roomName: string) => {
+    setMusicPickerRoom(roomName);
   }, []);
 
   // Get ungrouped devices for selection mode
@@ -505,6 +512,7 @@ export function DeviceGrid({ className }: DeviceGridProps) {
                 onVolumeChange={isSelectionMode ? undefined : handleVolumeChange}
                 onToggleMute={isSelectionMode ? undefined : handleToggleMute}
                 onGroupManage={isSelectionMode ? undefined : handleGroupManage}
+                onPickMusic={isSelectionMode ? undefined : handlePickMusic}
               />
             </div>
           );
@@ -525,6 +533,15 @@ export function DeviceGrid({ className }: DeviceGridProps) {
           device={groupManageDevice}
           open={!!groupManageDevice}
           onOpenChange={(open) => !open && setGroupManageDevice(null)}
+        />
+      )}
+
+      {/* Music Picker Dialog */}
+      {musicPickerRoom && (
+        <MusicPicker
+          roomName={musicPickerRoom}
+          open={!!musicPickerRoom}
+          onOpenChange={(open) => !open && setMusicPickerRoom(null)}
         />
       )}
     </div>

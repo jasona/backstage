@@ -49,6 +49,8 @@ interface DeviceCardProps {
   onVolumeChange?: (roomName: string, volume: number) => void;
   onToggleMute?: (roomName: string) => void;
   onGroupManage?: (device: DeviceStatus) => void;
+  /** Called when play is clicked on a stopped device with no queue */
+  onPickMusic?: (roomName: string) => void;
 }
 
 export function DeviceCard({
@@ -65,6 +67,7 @@ export function DeviceCard({
   onVolumeChange,
   onToggleMute,
   onGroupManage,
+  onPickMusic,
 }: DeviceCardProps) {
   const isPlaying = device.playbackState === 'PLAYING';
   const hasNowPlaying = device.nowPlaying?.title;
@@ -89,9 +92,14 @@ export function DeviceCard({
   const handlePlayPause = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      onPlayPause?.(device.roomName);
+      // If device is stopped with no queue, open music picker
+      if (device.playbackState === 'STOPPED' && !hasNowPlaying && onPickMusic) {
+        onPickMusic(device.roomName);
+      } else {
+        onPlayPause?.(device.roomName);
+      }
     },
-    [device.roomName, onPlayPause]
+    [device.roomName, device.playbackState, hasNowPlaying, onPlayPause, onPickMusic]
   );
 
   const handleNext = useCallback(
