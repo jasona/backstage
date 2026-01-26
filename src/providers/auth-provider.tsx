@@ -2,6 +2,7 @@
 
 /**
  * Authentication provider for PIN-based protection.
+ * Uses server-side PIN storage for security.
  * Manages authentication state and session.
  */
 
@@ -13,8 +14,11 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { getConfig, hasPinEnabled, getPinHash } from '@/lib/storage';
-import { verifyPin } from '@/lib/pin';
+
+interface AuthStatus {
+  isConfigured: boolean;
+  hasPinProtection: boolean;
+}
 
 interface AuthContextValue {
   /** Whether the user is currently authenticated */
@@ -29,8 +33,8 @@ interface AuthContextValue {
   unlock: (pin: string) => Promise<boolean>;
   /** Lock the app (require re-authentication) */
   lock: () => void;
-  /** Refresh the auth state from storage */
-  refresh: () => void;
+  /** Refresh the auth state from server */
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -45,25 +49,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [hasPinProtection, setHasPinProtection] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load initial state from localStorage
-  const refresh = useCallback(() => {
-    const config = getConfig();
+  // Load auth status from server
+  const refresh = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/status');
+      if (!response.ok) {
+        throw new Error('Failed to fetch auth status');
+      }
 
-    if (config) {
-      setIsConfigured(config.isConfigured);
-      setHasPinProtection(Boolean(config.pinHash));
+      const status: AuthStatus = await response.json();
 
-      // If no PIN protection, auto-authenticate
-      if (!config.pinHash && config.isConfigured) {
+      setIsConfigured(status.isConfigured);
+      setHasPinProtection(status.hasPinProtection);
+
+      // If no PIN protection and configured, auto-authenticate
+      if (!status.hasPinProtection && status.isConfigured) {
         setIsAuthenticated(true);
       }
-    } else {
+    } catch (error) {
+      console.error('Failed to fetch auth status:', error);
+      // On error, assume not configured
       setIsConfigured(false);
       setHasPinProtection(false);
       setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }, []);
 
   // Initialize on mount
@@ -71,24 +82,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refresh();
   }, [refresh]);
 
-  // Unlock with PIN
+  // Unlock with PIN (verify against server)
   const unlock = useCallback(async (pin: string): Promise<boolean> => {
-    const pinHash = getPinHash();
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pin }),
+      });
 
-    if (!pinHash) {
-      // No PIN set, just authenticate
-      setIsAuthenticated(true);
-      return true;
+      const result = await response.json();
+
+      if (result.authenticated) {
+        setIsAuthenticated(true);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Failed to verify PIN:', error);
+      return false;
     }
-
-    const isValid = await verifyPin(pin, pinHash);
-
-    if (isValid) {
-      setIsAuthenticated(true);
-      return true;
-    }
-
-    return false;
   }, []);
 
   // Lock the app

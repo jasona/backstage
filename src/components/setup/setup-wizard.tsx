@@ -10,8 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PinSetup } from './pin-setup';
-import { setConfig } from '@/lib/storage';
-import { hashPinSync } from '@/lib/pin';
+import { useAuth } from '@/providers/auth-provider';
 import { cn } from '@/lib/utils';
 import { Loader2, CheckCircle2, XCircle, Wifi, Lock, ArrowRight, RefreshCw } from 'lucide-react';
 
@@ -29,6 +28,7 @@ const INITIAL_STATE: SetupState = {
 
 export function SetupWizard() {
   const router = useRouter();
+  const auth = useAuth();
   const [state, setState] = useState<SetupState>(INITIAL_STATE);
 
   const updateState = useCallback((updates: Partial<SetupState>) => {
@@ -66,21 +66,31 @@ export function SetupWizard() {
     }
   }, [updateState]);
 
-  // Handle PIN setup completion
-  const handlePinSetup = useCallback((pin: string | null) => {
+  // Handle PIN setup completion - save to server
+  const handlePinSetup = useCallback(async (pin: string | null) => {
     try {
-      const pinHash = pin ? hashPinSync(pin) : undefined;
-
-      // Save configuration
-      setConfig({
-        seedIp: '', // No longer used but kept for compatibility
-        pinHash,
-        isConfigured: true,
+      // Call server API to setup PIN
+      const response = await fetch('/api/auth/setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pin }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        updateState({
+          error: result.error || 'Failed to save configuration',
+        });
+        return;
+      }
 
       updateState({ step: 'complete' });
 
-      // Redirect to dashboard after brief delay
+      // Refresh auth state and redirect to dashboard after brief delay
+      await auth.refresh();
       setTimeout(() => {
         router.push('/');
       }, 1500);
@@ -89,7 +99,7 @@ export function SetupWizard() {
         error: err instanceof Error ? err.message : 'Failed to save configuration',
       });
     }
-  }, [updateState, router]);
+  }, [updateState, router, auth]);
 
   // Render step content
   const renderStep = () => {
