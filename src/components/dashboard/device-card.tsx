@@ -27,6 +27,7 @@ import {
   Users,
   Loader2,
   Crown,
+  Music,
 } from 'lucide-react';
 import type { DeviceStatus } from '@/types/sonos';
 import type { ZoneStatus } from '@/types/sonos';
@@ -154,6 +155,14 @@ export function DeviceCard({
       onToggleMute?.(device.roomName);
     },
     [device.roomName, onToggleMute]
+  );
+
+  const handlePickMusic = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onPickMusic?.(device.roomName);
+    },
+    [device.roomName, onPickMusic]
   );
 
   return (
@@ -284,6 +293,24 @@ export function DeviceCard({
 
         {/* Playback Controls */}
         <div className="flex items-center justify-center gap-1">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={handlePickMusic}
+                >
+                  <Music className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Change music</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <Button
             variant="ghost"
             size="icon"
