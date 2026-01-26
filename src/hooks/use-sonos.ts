@@ -276,7 +276,7 @@ export function useJoinGroup() {
   return useMutation({
     mutationFn: ({ roomName, targetRoom }: { roomName: string; targetRoom: string }) =>
       joinGroup(roomName, targetRoom),
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: sonosQueryKeys.zones });
     },
   });
@@ -290,7 +290,7 @@ export function useLeaveGroup() {
 
   return useMutation({
     mutationFn: (roomName: string) => leaveGroup(roomName),
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: sonosQueryKeys.zones });
     },
   });

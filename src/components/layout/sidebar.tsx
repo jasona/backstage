@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Speaker,
+  Users,
 } from 'lucide-react';
 
 interface NavItem {
@@ -28,6 +29,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Groups', href: '/dashboard/groups', icon: Users },
   { label: 'Diagnostics', href: '/dashboard/diagnostics', icon: Activity },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
