@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useJoinGroup, useLeaveGroup, useZoneStatuses, useDevices } from '@/hooks/use-sonos';
 import { Users, Plus, Minus, Crown, Loader2, Unlink } from 'lucide-react';
+import { toast } from 'sonner';
 import type { DeviceStatus, ZoneStatus } from '@/types/sonos';
 
 interface GroupManagerProps {
@@ -64,9 +65,11 @@ export function GroupManager({ device, open, onOpenChange }: GroupManagerProps) 
           roomName: device.roomName,
           targetRoom,
         });
+        toast.success(`${device.roomName} joined ${targetRoom}'s group`);
         onOpenChange(false);
       } catch (error) {
         console.error('Failed to join group:', error);
+        toast.error(`Failed to join group: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     },
     [device.roomName, joinGroupMutation, onOpenChange]
@@ -76,9 +79,11 @@ export function GroupManager({ device, open, onOpenChange }: GroupManagerProps) 
   const handleLeaveGroup = useCallback(async () => {
     try {
       await leaveGroupMutation.mutateAsync(device.roomName);
+      toast.success(`${device.roomName} left the group`);
       onOpenChange(false);
     } catch (error) {
       console.error('Failed to leave group:', error);
+      toast.error(`Failed to leave group: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }, [device.roomName, leaveGroupMutation, onOpenChange]);
 
@@ -90,8 +95,10 @@ export function GroupManager({ device, open, onOpenChange }: GroupManagerProps) 
           roomName: targetDevice.roomName,
           targetRoom: device.roomName,
         });
+        toast.success(`${targetDevice.roomName} added to group`);
       } catch (error) {
         console.error('Failed to add device to group:', error);
+        toast.error(`Failed to add ${targetDevice.roomName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     },
     [device.roomName, joinGroupMutation]
@@ -205,8 +212,13 @@ export function GroupManager({ device, open, onOpenChange }: GroupManagerProps) 
           {ungroupedDevices.length > 0 && (
             <div className="space-y-2">
               <div className="text-sm font-medium text-foreground">
-                Add Speaker to This Group
+                {isInGroup ? 'Add Speaker to This Group' : 'Create New Group'}
               </div>
+              <p className="text-xs text-muted-foreground">
+                {isInGroup
+                  ? 'Select a speaker to add to this group'
+                  : `Select a speaker to group with ${device.roomName}`}
+              </p>
               <div className="space-y-1">
                 {ungroupedDevices.map((d) => (
                   <Button
@@ -231,8 +243,12 @@ export function GroupManager({ device, open, onOpenChange }: GroupManagerProps) 
 
           {/* Empty State */}
           {otherZones.length === 0 && ungroupedDevices.length === 0 && !isInGroup && (
-            <div className="text-center py-4 text-muted-foreground text-sm">
-              No other speakers available to group with.
+            <div className="text-center py-6 space-y-2">
+              <Users className="w-8 h-8 text-muted-foreground mx-auto" />
+              <p className="text-sm font-medium text-foreground">No speakers to group with</p>
+              <p className="text-xs text-muted-foreground">
+                All other speakers are already grouped. Ungroup some speakers first to create a new group.
+              </p>
             </div>
           )}
         </div>

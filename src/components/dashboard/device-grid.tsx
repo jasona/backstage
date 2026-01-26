@@ -8,11 +8,18 @@
 import { useState, useMemo, useCallback } from 'react';
 import { DeviceCard } from './device-card';
 import { GroupManager } from './group-manager';
+import { GroupSelectionBar } from './group-selection-bar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   useDevices,
@@ -22,6 +29,7 @@ import {
   usePrevious,
   useVolume,
   useToggleMute,
+  useJoinGroup,
 } from '@/hooks/use-sonos';
 import {
   Search,
@@ -30,7 +38,10 @@ import {
   RefreshCw,
   Speaker,
   AlertCircle,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { DeviceStatus, PlaybackState } from '@/types/sonos';
 
 type SortField = 'roomName' | 'status' | 'model';
@@ -49,6 +60,7 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   const previousMutation = usePrevious();
   const volumeMutation = useVolume();
   const toggleMuteMutation = useToggleMute();
+  const joinGroupMutation = useJoinGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('roomName');
@@ -56,6 +68,11 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [groupManageDevice, setGroupManageDevice] = useState<DeviceStatus | null>(null);
+
+  // Multi-select state for batch grouping
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<Set<string>>(new Set());
+  const [isGroupingInProgress, setIsGroupingInProgress] = useState(false);
 
   // Find zone for a device
   const getZoneForDevice = useCallback(
@@ -71,6 +88,75 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   const handleGroupManage = useCallback((device: DeviceStatus) => {
     setGroupManageDevice(device);
   }, []);
+
+  // Get ungrouped devices for selection mode
+  const ungroupedDevices = useMemo(() => {
+    return devices.filter((d) => {
+      const zone = zoneStatuses.find(
+        (z) => z.coordinatorId === d.id || z.memberIds.includes(d.id)
+      );
+      return zone && zone.memberIds.length <= 1;
+    });
+  }, [devices, zoneStatuses]);
+
+  // Toggle selection mode
+  const toggleSelectionMode = useCallback(() => {
+    setIsSelectionMode((prev) => {
+      if (prev) {
+        // Clear selection when exiting selection mode
+        setSelectedDeviceIds(new Set());
+      }
+      return !prev;
+    });
+  }, []);
+
+  // Toggle device selection
+  const toggleDeviceSelection = useCallback((deviceId: string) => {
+    setSelectedDeviceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(deviceId)) {
+        next.delete(deviceId);
+      } else {
+        next.add(deviceId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Clear selection
+  const clearSelection = useCallback(() => {
+    setSelectedDeviceIds(new Set());
+    setIsSelectionMode(false);
+  }, []);
+
+  // Group selected devices together
+  const groupSelectedDevices = useCallback(async () => {
+    const selectedDevices = devices.filter((d) => selectedDeviceIds.has(d.id));
+    if (selectedDevices.length < 2) return;
+
+    setIsGroupingInProgress(true);
+
+    try {
+      // Use the first selected device as the coordinator
+      const [coordinator, ...members] = selectedDevices;
+
+      // Join each member to the coordinator's group sequentially
+      for (const member of members) {
+        await joinGroupMutation.mutateAsync({
+          roomName: member.roomName,
+          targetRoom: coordinator.roomName,
+        });
+      }
+
+      toast.success(`Created group with ${selectedDevices.length} speakers`);
+      clearSelection();
+    } catch (error) {
+      console.error('Failed to group devices:', error);
+      toast.error(`Failed to group speakers: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsGroupingInProgress(false);
+    }
+  }, [devices, selectedDeviceIds, joinGroupMutation, clearSelection]);
 
   // Filter and sort devices
   const filteredDevices = useMemo(() => {
@@ -310,6 +396,32 @@ export function DeviceGrid({ className }: DeviceGridProps) {
           </Button>
         </div>
 
+        {/* Selection Mode Toggle */}
+        {ungroupedDevices.length >= 2 && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isSelectionMode ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={toggleSelectionMode}
+                  className="h-8"
+                >
+                  {isSelectionMode ? (
+                    <CheckSquare className="w-4 h-4 mr-1" />
+                  ) : (
+                    <Square className="w-4 h-4 mr-1" />
+                  )}
+                  <span className="text-xs">Select</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Select multiple speakers to group together</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
         {/* Refresh */}
         <Button variant="ghost" size="icon" onClick={() => refetch()} className="h-8 w-8">
           <RefreshCw className="w-4 h-4" />
@@ -325,25 +437,87 @@ export function DeviceGrid({ className }: DeviceGridProps) {
 
       {/* Device Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredDevices.map((device) => (
-          <DeviceCard
-            key={device.id}
-            device={device}
-            zone={getZoneForDevice(device)}
-            isSelected={selectedDeviceId === device.id}
-            isPlayPauseLoading={playPauseMutation.isPending && playPauseMutation.variables === device.roomName}
-            isNextLoading={nextMutation.isPending && nextMutation.variables === device.roomName}
-            isPreviousLoading={previousMutation.isPending && previousMutation.variables === device.roomName}
-            onSelect={setSelectedDeviceId}
-            onPlayPause={handlePlayPause}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-            onVolumeChange={handleVolumeChange}
-            onToggleMute={handleToggleMute}
-            onGroupManage={handleGroupManage}
-          />
-        ))}
+        {filteredDevices.map((device) => {
+          const zone = getZoneForDevice(device);
+          const isUngrouped = zone && zone.memberIds.length <= 1;
+          const isSelectedForGrouping = selectedDeviceIds.has(device.id);
+
+          return (
+            <div
+              key={device.id}
+              className={cn(
+                'relative',
+                isSelectionMode && isUngrouped && 'cursor-pointer'
+              )}
+              onClick={
+                isSelectionMode && isUngrouped
+                  ? () => toggleDeviceSelection(device.id)
+                  : undefined
+              }
+            >
+              {/* Selection indicator overlay */}
+              {isSelectionMode && isUngrouped && (
+                <div
+                  className={cn(
+                    'absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center',
+                    isSelectedForGrouping
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted border border-border-subtle'
+                  )}
+                >
+                  {isSelectedForGrouping ? (
+                    <CheckSquare className="w-4 h-4" />
+                  ) : (
+                    <Square className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+              )}
+
+              {/* Dimmed overlay for grouped devices in selection mode */}
+              {isSelectionMode && !isUngrouped && (
+                <div className="absolute inset-0 bg-background/50 z-10 rounded-lg pointer-events-none" />
+              )}
+
+              <DeviceCard
+                device={device}
+                zone={zone}
+                isSelected={
+                  isSelectionMode
+                    ? isSelectedForGrouping
+                    : selectedDeviceId === device.id
+                }
+                isPlayPauseLoading={
+                  playPauseMutation.isPending &&
+                  playPauseMutation.variables === device.roomName
+                }
+                isNextLoading={
+                  nextMutation.isPending &&
+                  nextMutation.variables === device.roomName
+                }
+                isPreviousLoading={
+                  previousMutation.isPending &&
+                  previousMutation.variables === device.roomName
+                }
+                onSelect={isSelectionMode ? undefined : setSelectedDeviceId}
+                onPlayPause={isSelectionMode ? undefined : handlePlayPause}
+                onNext={isSelectionMode ? undefined : handleNext}
+                onPrevious={isSelectionMode ? undefined : handlePrevious}
+                onVolumeChange={isSelectionMode ? undefined : handleVolumeChange}
+                onToggleMute={isSelectionMode ? undefined : handleToggleMute}
+                onGroupManage={isSelectionMode ? undefined : handleGroupManage}
+              />
+            </div>
+          );
+        })}
       </div>
+
+      {/* Group Selection Bar */}
+      <GroupSelectionBar
+        selectedCount={selectedDeviceIds.size}
+        isLoading={isGroupingInProgress}
+        onGroupTogether={groupSelectedDevices}
+        onClearSelection={clearSelection}
+      />
 
       {/* Group Manager Dialog */}
       {groupManageDevice && (

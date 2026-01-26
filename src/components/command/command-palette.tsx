@@ -19,10 +19,12 @@ import {
 } from '@/components/ui/command';
 import {
   useDevices,
+  useZoneStatuses,
   usePauseAll,
   useResumeAll,
   usePlayPause,
   useSetAllVolume,
+  useLeaveGroup,
 } from '@/hooks/use-sonos';
 import {
   Pause,
@@ -34,7 +36,10 @@ import {
   VolumeX,
   Home,
   Search,
+  Users,
+  Unlink,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -44,10 +49,12 @@ interface CommandPaletteProps {
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
   const { devices } = useDevices();
+  const { zoneStatuses } = useZoneStatuses();
   const pauseAllMutation = usePauseAll();
   const resumeAllMutation = useResumeAll();
   const playPauseMutation = usePlayPause();
   const setAllVolumeMutation = useSetAllVolume();
+  const leaveGroupMutation = useLeaveGroup();
 
   // Get playing devices
   const playingDevices = useMemo(
@@ -59,6 +66,21 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     () => devices.filter((d) => d.playbackState === 'PAUSED_PLAYBACK'),
     [devices]
   );
+
+  // Get grouped devices (devices that are members of a group with more than 1 member)
+  const groupedDevices = useMemo(() => {
+    return devices.filter((d) => {
+      const zone = zoneStatuses.find(
+        (z) => z.coordinatorId === d.id || z.memberIds.includes(d.id)
+      );
+      return zone && zone.memberIds.length > 1;
+    });
+  }, [devices, zoneStatuses]);
+
+  // Check if there are any groups
+  const hasGroups = useMemo(() => {
+    return zoneStatuses.some((z) => z.memberIds.length > 1);
+  }, [zoneStatuses]);
 
   // Close palette helper
   const closeAndRun = useCallback(
@@ -101,6 +123,40 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     [closeAndRun, setAllVolumeMutation]
   );
 
+  // Ungroup all devices
+  const handleUngroupAll = useCallback(async () => {
+    onOpenChange(false);
+
+    // Find all non-coordinator members in groups
+    const membersToUngroup = groupedDevices.filter((d) => !d.isCoordinator);
+
+    if (membersToUngroup.length === 0) {
+      toast.info('No grouped speakers to ungroup');
+      return;
+    }
+
+    try {
+      // Ungroup each member sequentially
+      for (const device of membersToUngroup) {
+        await leaveGroupMutation.mutateAsync(device.roomName);
+      }
+      toast.success(`Ungrouped ${membersToUngroup.length} speaker${membersToUngroup.length > 1 ? 's' : ''}`);
+    } catch (error) {
+      console.error('Failed to ungroup devices:', error);
+      toast.error(`Failed to ungroup: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [onOpenChange, groupedDevices, leaveGroupMutation]);
+
+  // Navigate to dashboard and enable selection mode
+  const handleGroupSpeakers = useCallback(() => {
+    closeAndRun(() => {
+      router.push('/dashboard');
+      // Note: Selection mode toggle is managed in device-grid.tsx
+      // This just navigates to the dashboard where users can use the Select button
+      toast.info('Use the "Select" button in the toolbar to select speakers to group');
+    });
+  }, [closeAndRun, router]);
+
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <CommandInput placeholder="Type a command or search..." />
@@ -119,6 +175,22 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <span>Resume All</span>
             <CommandShortcut>⌘⇧R</CommandShortcut>
           </CommandItem>
+        </CommandGroup>
+
+        <CommandSeparator />
+
+        {/* Grouping Actions */}
+        <CommandGroup heading="Grouping">
+          <CommandItem onSelect={handleGroupSpeakers}>
+            <Users className="mr-2 h-4 w-4" />
+            <span>Group speakers...</span>
+          </CommandItem>
+          {hasGroups && (
+            <CommandItem onSelect={handleUngroupAll}>
+              <Unlink className="mr-2 h-4 w-4" />
+              <span>Ungroup all speakers</span>
+            </CommandItem>
+          )}
         </CommandGroup>
 
         <CommandSeparator />

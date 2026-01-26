@@ -211,17 +211,27 @@ export function DeviceCard({
 
           {/* Group button for ungrouped devices */}
           {!isInGroup && onGroupManage && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
-              onClick={(e) => {
-                e.stopPropagation();
-                onGroupManage(device);
-              }}
-            >
-              <Users className="w-3.5 h-3.5" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-muted-foreground hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onGroupManage(device);
+                    }}
+                  >
+                    <Users className="w-3.5 h-3.5 mr-1" />
+                    <span className="text-xs">Group</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Group with other speakers</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
 
           {/* Status indicator */}
