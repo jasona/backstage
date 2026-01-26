@@ -2,8 +2,8 @@
 
 /**
  * Authentication provider for PIN-based protection.
- * Uses server-side PIN storage for security.
- * Manages authentication state and session.
+ * Uses server-side PIN storage and HTTP-only session cookies.
+ * Session cookies persist for 30 days after successful PIN entry.
  */
 
 import {
@@ -18,10 +18,11 @@ import {
 interface AuthStatus {
   isConfigured: boolean;
   hasPinProtection: boolean;
+  isAuthenticated: boolean;
 }
 
 interface AuthContextValue {
-  /** Whether the user is currently authenticated */
+  /** Whether the user is currently authenticated (has valid session) */
   isAuthenticated: boolean;
   /** Whether the app has been configured (setup wizard completed) */
   isConfigured: boolean;
@@ -31,8 +32,8 @@ interface AuthContextValue {
   isLoading: boolean;
   /** Unlock the app with a PIN */
   unlock: (pin: string) => Promise<boolean>;
-  /** Lock the app (require re-authentication) */
-  lock: () => void;
+  /** Lock the app (clear session) */
+  lock: () => Promise<void>;
   /** Refresh the auth state from server */
   refresh: () => Promise<void>;
 }
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [hasPinProtection, setHasPinProtection] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load auth status from server
+  // Load auth status from server (includes session cookie check)
   const refresh = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/status');
@@ -61,11 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       setIsConfigured(status.isConfigured);
       setHasPinProtection(status.hasPinProtection);
-
-      // If no PIN protection and configured, auto-authenticate
-      if (!status.hasPinProtection && status.isConfigured) {
-        setIsAuthenticated(true);
-      }
+      setIsAuthenticated(status.isAuthenticated);
     } catch (error) {
       console.error('Failed to fetch auth status:', error);
       // On error, assume not configured
@@ -82,7 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refresh();
   }, [refresh]);
 
-  // Unlock with PIN (verify against server)
+  // Unlock with PIN (verify against server, sets session cookie)
   const unlock = useCallback(async (pin: string): Promise<boolean> => {
     try {
       const response = await fetch('/api/auth/verify', {
@@ -107,8 +104,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  // Lock the app
-  const lock = useCallback(() => {
+  // Lock the app (clear session cookie)
+  const lock = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Failed to logout:', error);
+    }
     setIsAuthenticated(false);
   }, []);
 
