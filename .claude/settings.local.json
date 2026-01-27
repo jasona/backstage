@@ -21,7 +21,13 @@
       "Bash(git rm:*)",
       "Bash(ls:*)",
       "Bash(git mv sonos-manager/.env.example sonos-manager/.gitignore sonos-manager/components.json sonos-manager/eslint.config.mjs sonos-manager/jest.config.js sonos-manager/jest.setup.js sonos-manager/next.config.ts sonos-manager/next-env.d.ts sonos-manager/package.json sonos-manager/package-lock.json sonos-manager/postcss.config.mjs sonos-manager/README.md sonos-manager/tsconfig.json .)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(git pull:*)",
+      "WebFetch(domain:support.sonos.com)",
+      "Bash(npm run lint)",
+      "Bash(git restore:*)",
+      "Bash(curl:*)",
+      "Bash(timeout 15 npm run dev:*)"
     ]
   }
 }
