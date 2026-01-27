@@ -7,23 +7,39 @@ A modern web application for managing and monitoring large Sonos speaker install
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat-square&logo=tailwind-css)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
+## Screenshots
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Group Management
+![Group Management](screenshots/group-management.png)
+
+### Network Diagnostics
+![Network Diagnostics](screenshots/network-diagnostics.png)
+
+### Settings
+![Settings](screenshots/settings.png)
+
 ## Features
 
 ### Dashboard
 - **Real-time device status** - See all your Sonos devices at a glance with 2-second polling updates
 - **Device cards** - View now playing info, volume levels, and playback status
 - **Search & filter** - Quickly find devices by name, model, or currently playing content
-- **Sort options** - Organize by room name, status, or model
+- **Sort options** - Organize by room name, status, or model with persistent preferences
 
 ### Playback Controls
 - **Play/Pause/Skip** - Control individual devices directly from the dashboard
 - **Volume control** - Smooth slider with debounced updates for responsive feedback
 - **Mute toggle** - Quickly mute/unmute any device
+- **Music picker** - Browse and select music sources directly from device cards
 
 ### Device Grouping
 - **Visual group indicators** - See which devices are grouped together
 - **Group management** - Join devices to groups or remove them
 - **Coordinator badges** - Identify group leaders at a glance
+- **Ungrouped device controls** - Full playback controls for standalone devices on the Groups page
 
 ### Bulk Operations
 - **Pause All** - Stop playback on all devices instantly
