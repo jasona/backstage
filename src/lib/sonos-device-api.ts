@@ -10,7 +10,7 @@ import type {
   SignalQuality,
 } from '@/types/sonos';
 
-// Timeout for device requests (devices can be slow to respond)
+// Timeout for device requests (faster endpoints respond quickly)
 const DEVICE_TIMEOUT = 5000;
 
 /** Raw device status info from /status/info endpoint */
@@ -25,6 +25,8 @@ export interface DeviceStatusInfo {
   zoneName?: string;
   ethernetConnected?: boolean;
   wifiEnabled?: boolean;
+  /** Wireless mode string: 'SONOSNET_MODE' or 'STATION_MODE' (WiFi) */
+  wifiModeString?: string;
 }
 
 /** Network matrix entry from /support/review */
@@ -47,50 +49,101 @@ const WIFI_ONLY_MODELS = [
 ];
 
 /**
- * Fetch device status info from /status/info endpoint
+ * Fetch a single endpoint with timeout
  */
-export async function fetchDeviceStatus(ip: string): Promise<DeviceStatusInfo | null> {
+async function fetchWithTimeout(url: string, timeout: number = DEVICE_TIMEOUT): Promise<string | null> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), DEVICE_TIMEOUT);
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const response = await fetch(`http://${ip}:1400/status/info`, {
-      signal: controller.signal,
-    });
+    const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
 
     if (!response.ok) {
       return null;
     }
 
-    const xmlText = await response.text();
-    return parseDeviceStatusXml(xmlText);
-  } catch (error) {
-    // Device unreachable or timed out
-    console.warn(`Failed to fetch device status from ${ip}:`, error);
+    return await response.text();
+  } catch {
     return null;
   }
 }
 
 /**
- * Parse the XML response from /status/info
+ * Parse /status/wireless XML response
+ * Returns WifiModeString (SONOSNET_MODE or STATION_MODE)
  */
-function parseDeviceStatusXml(xmlText: string): DeviceStatusInfo {
+function parseWirelessStatus(xmlText: string): { wifiModeString?: string } {
   const $ = cheerio.load(xmlText, { xmlMode: true });
+  return {
+    wifiModeString: $('WifiModeString').text() || undefined,
+  };
+}
 
+/**
+ * Parse /status/zp XML response
+ * Returns MAC, serial, software version, model info
+ */
+function parseZpStatus(xmlText: string): Partial<DeviceStatusInfo> {
+  const $ = cheerio.load(xmlText, { xmlMode: true });
   return {
     serialNumber: $('SerialNumber').text() || undefined,
     softwareVersion: $('SoftwareVersion').text() || undefined,
     hardwareVersion: $('HardwareVersion').text() || undefined,
-    ipAddress: $('IPAddress').text() || undefined,
     macAddress: $('MACAddress').text() || undefined,
-    modelNumber: $('ModelNumber').text() || undefined,
-    modelName: $('DisplayName').text() || $('RoomName').text() || undefined,
-    zoneName: $('ZoneName').text() || $('RoomName').text() || undefined,
-    ethernetConnected: $('EthLink').text() === '1',
-    wifiEnabled: $('WifiEnabled').text() === '1',
+    modelNumber: $('SeriesID').text() || undefined,
+    ipAddress: $('IPAddress').text() || undefined,
   };
 }
+
+/**
+ * Parse /status/enetports XML response
+ * Returns ethernet link status
+ */
+function parseEnetPortsStatus(xmlText: string): { ethernetConnected: boolean } {
+  const $ = cheerio.load(xmlText, { xmlMode: true });
+  // EnetPorts contains Port elements with Link child (1 = connected, 0 = disconnected)
+  const linkText = $('Port Link').first().text();
+  return {
+    ethernetConnected: linkText === '1',
+  };
+}
+
+/**
+ * Fetch device status info using fast, focused endpoints
+ * Calls /status/wireless, /status/zp, and /status/enetports in parallel
+ */
+export async function fetchDeviceStatus(ip: string): Promise<DeviceStatusInfo | null> {
+  try {
+    // Fetch all three endpoints in parallel for speed
+    const [wirelessXml, zpXml, enetXml] = await Promise.all([
+      fetchWithTimeout(`http://${ip}:1400/status/wireless`),
+      fetchWithTimeout(`http://${ip}:1400/status/zp`),
+      fetchWithTimeout(`http://${ip}:1400/status/enetports`),
+    ]);
+
+    // If none of the endpoints responded, device is unreachable
+    if (!wirelessXml && !zpXml && !enetXml) {
+      return null;
+    }
+
+    // Parse each response and merge the results
+    const wirelessInfo = wirelessXml ? parseWirelessStatus(wirelessXml) : {};
+    const zpInfo = zpXml ? parseZpStatus(zpXml) : {};
+    const enetInfo = enetXml ? parseEnetPortsStatus(enetXml) : { ethernetConnected: false };
+
+    return {
+      ...zpInfo,
+      ...wirelessInfo,
+      ...enetInfo,
+      wifiEnabled: true, // If we can query it, WiFi is enabled
+    };
+  } catch {
+    // Device unreachable or timed out
+    return null;
+  }
+}
+
 
 /**
  * Parse the network matrix from /support/review endpoint
@@ -158,7 +211,8 @@ function extractNetworkMatrixFromHtml(htmlText: string): NetworkMatrixEntry[] {
 }
 
 /**
- * Detect the connection type for a device
+ * Detect the connection type for a device based on its reported wireless mode.
+ * Sonos devices report WifiModeString as 'SONOSNET_MODE' or 'STATION_MODE' (WiFi).
  */
 export function detectConnectionType(
   deviceInfo: DeviceStatusInfo,
@@ -169,17 +223,26 @@ export function detectConnectionType(
     return 'ethernet';
   }
 
+  // Use the device's reported wireless mode if available
+  if (deviceInfo.wifiModeString === 'SONOSNET_MODE') {
+    return 'sonosnet';
+  }
+
+  if (deviceInfo.wifiModeString === 'STATION_MODE') {
+    return 'wifi';
+  }
+
+  // Fallback for devices without WifiModeString (older firmware or WiFi-only models)
   // WiFi-only models (Era, Move, Roam) never use SonosNet
   if (deviceInfo.modelNumber && WIFI_ONLY_MODELS.includes(deviceInfo.modelNumber)) {
     return 'wifi';
   }
 
-  // If any device on the network is wired, others use SonosNet mesh
+  // Legacy fallback: infer from network topology
   if (hasWiredDevice) {
     return 'sonosnet';
   }
 
-  // No wired device = all on WiFi
   return 'wifi';
 }
 
