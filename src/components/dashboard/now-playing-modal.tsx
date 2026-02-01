@@ -185,6 +185,14 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
   const [isDragging, setIsDragging] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Track if album art failed to load
+  const [albumArtError, setAlbumArtError] = useState(false);
+
+  // Reset album art error when the URI changes
+  useEffect(() => {
+    setAlbumArtError(false);
+  }, [device?.nowPlaying?.albumArtUri]);
+
   // Sync local volume with device volume when not dragging
   useEffect(() => {
     if (!isDragging && device) {
@@ -292,12 +300,13 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
                 'rounded-lg bg-muted flex items-center justify-center overflow-hidden',
                 isGrouped ? 'w-40 h-40' : 'w-48 h-48'
               )}>
-                {nowPlaying?.albumArtUri ? (
+                {nowPlaying?.albumArtUri && !albumArtError ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={nowPlaying.albumArtUri}
                     alt={nowPlaying.album || nowPlaying.title || 'Album art'}
                     className="w-full h-full object-cover"
+                    onError={() => setAlbumArtError(true)}
                   />
                 ) : isRadio ? (
                   <Radio className={cn(isGrouped ? 'w-16 h-16' : 'w-20 h-20', 'text-muted-foreground')} />
