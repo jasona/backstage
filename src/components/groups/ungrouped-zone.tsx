@@ -64,7 +64,7 @@ export function UngroupedZone({
 
       <CardContent className="pt-0 flex-1 flex flex-col min-h-0">
         {devices.length > 0 ? (
-          <div className="space-y-2 overflow-y-auto pr-1 flex-1 min-h-0">
+          <div className="space-y-2 overflow-y-auto p-1 -m-1 flex-1 min-h-0">
             {devices.map((device) => (
               <DraggableDevice
                 key={device.id}

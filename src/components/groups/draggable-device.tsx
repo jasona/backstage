@@ -7,7 +7,6 @@
  */
 
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -68,7 +67,7 @@ export function DraggableDevice({
   isPreviousLoading = false,
 }: DraggableDeviceProps) {
   const isPlaying = device.playbackState === 'PLAYING';
-  const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: device.id,
     data: { device },
   });
@@ -151,17 +150,12 @@ export function DraggableDevice({
     onPickMusic?.(device.roomName);
   }, [device.roomName, onPickMusic]);
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
-  };
-
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={cn(
         'touch-none',
-        isDragging && 'opacity-50 z-50'
+        isDragging && 'opacity-50'
       )}
     >
       <Card

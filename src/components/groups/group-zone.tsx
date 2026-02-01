@@ -80,7 +80,7 @@ export function GroupZone({
         <div className="border-t border-border-subtle flex-shrink-0" />
 
         {/* Device List */}
-        <div className="space-y-2 overflow-y-auto pr-1 flex-1 min-h-0">
+        <div className="space-y-2 overflow-y-auto p-1 -m-1 flex-1 min-h-0">
           {devices.map((device) => (
             <DraggableDevice
               key={device.id}
