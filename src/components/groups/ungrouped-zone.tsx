@@ -20,6 +20,8 @@ interface UngroupedZoneProps {
   onNext?: (roomName: string) => void;
   onPrevious?: (roomName: string) => void;
   onPickMusic?: (roomName: string) => void;
+  /** Called when now playing section is clicked */
+  onNowPlayingClick?: (roomName: string) => void;
   playPauseLoadingRoom?: string;
   nextLoadingRoom?: string;
   previousLoadingRoom?: string;
@@ -33,6 +35,7 @@ export function UngroupedZone({
   onNext,
   onPrevious,
   onPickMusic,
+  onNowPlayingClick,
   playPauseLoadingRoom,
   nextLoadingRoom,
   previousLoadingRoom,
@@ -77,6 +80,7 @@ export function UngroupedZone({
                 onNext={onNext}
                 onPrevious={onPrevious}
                 onPickMusic={onPickMusic}
+                onNowPlayingClick={onNowPlayingClick}
                 isPlayPauseLoading={playPauseLoadingRoom === device.roomName}
                 isNextLoading={nextLoadingRoom === device.roomName}
                 isPreviousLoading={previousLoadingRoom === device.roomName}

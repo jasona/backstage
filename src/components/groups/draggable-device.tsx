@@ -47,6 +47,8 @@ interface DraggableDeviceProps {
   onNext?: (roomName: string) => void;
   onPrevious?: (roomName: string) => void;
   onPickMusic?: (roomName: string) => void;
+  /** Called when now playing section is clicked */
+  onNowPlayingClick?: (roomName: string) => void;
   isPlayPauseLoading?: boolean;
   isNextLoading?: boolean;
   isPreviousLoading?: boolean;
@@ -62,6 +64,7 @@ export function DraggableDevice({
   onNext,
   onPrevious,
   onPickMusic,
+  onNowPlayingClick,
   isPlayPauseLoading = false,
   isNextLoading = false,
   isPreviousLoading = false,
@@ -150,6 +153,12 @@ export function DraggableDevice({
     onPickMusic?.(device.roomName);
   }, [device.roomName, onPickMusic]);
 
+  const handleNowPlayingClick = useCallback(() => {
+    if (device.nowPlaying?.title && onNowPlayingClick) {
+      onNowPlayingClick(device.roomName);
+    }
+  }, [device.roomName, device.nowPlaying?.title, onNowPlayingClick]);
+
   return (
     <div
       ref={setNodeRef}
@@ -204,7 +213,13 @@ export function DraggableDevice({
 
           {/* Now Playing (for ungrouped devices with playback controls) - fixed height */}
           {showPlaybackControls && (
-            <div className="text-xs text-muted-foreground truncate h-4">
+            <div
+              className={cn(
+                'text-xs text-muted-foreground truncate h-4 rounded px-1 -mx-1 transition-colors',
+                device.nowPlaying?.title && onNowPlayingClick && 'cursor-pointer hover:bg-hover hover:text-foreground'
+              )}
+              onClick={device.nowPlaying?.title && onNowPlayingClick ? handleNowPlayingClick : undefined}
+            >
               {device.nowPlaying?.title ? (
                 <span>
                   {device.nowPlaying.title}

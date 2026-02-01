@@ -10,6 +10,7 @@ import { DeviceCard } from './device-card';
 import { GroupManager } from './group-manager';
 import { GroupSelectionBar } from './group-selection-bar';
 import { MusicPicker } from './music-picker';
+import { NowPlayingModal } from './now-playing-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -95,6 +96,7 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
   const [groupManageDevice, setGroupManageDevice] = useState<DeviceStatus | null>(null);
   const [musicPickerRoom, setMusicPickerRoom] = useState<string | null>(null);
+  const [nowPlayingRoom, setNowPlayingRoom] = useState<string | null>(null);
 
   // Multi-select state for batch grouping
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -119,6 +121,11 @@ export function DeviceGrid({ className }: DeviceGridProps) {
   // Handle music picker open
   const handlePickMusic = useCallback((roomName: string) => {
     setMusicPickerRoom(roomName);
+  }, []);
+
+  // Handle now playing modal open
+  const handleNowPlayingClick = useCallback((roomName: string) => {
+    setNowPlayingRoom(roomName);
   }, []);
 
   // Get ungrouped devices for selection mode
@@ -538,6 +545,7 @@ export function DeviceGrid({ className }: DeviceGridProps) {
                 onToggleMute={isSelectionMode ? undefined : handleToggleMute}
                 onGroupManage={isSelectionMode ? undefined : handleGroupManage}
                 onPickMusic={isSelectionMode ? undefined : handlePickMusic}
+                onNowPlayingClick={isSelectionMode ? undefined : handleNowPlayingClick}
               />
             </div>
           );
@@ -567,6 +575,15 @@ export function DeviceGrid({ className }: DeviceGridProps) {
           roomName={musicPickerRoom}
           open={!!musicPickerRoom}
           onOpenChange={(open) => !open && setMusicPickerRoom(null)}
+        />
+      )}
+
+      {/* Now Playing Modal */}
+      {nowPlayingRoom && (
+        <NowPlayingModal
+          roomName={nowPlayingRoom}
+          open={!!nowPlayingRoom}
+          onOpenChange={(open) => !open && setNowPlayingRoom(null)}
         />
       )}
     </div>

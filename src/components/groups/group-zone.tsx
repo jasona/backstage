@@ -23,6 +23,8 @@ interface GroupZoneProps {
   onDeviceVolumeChange?: (roomName: string, volume: number) => void;
   onToggleMute?: (roomName: string) => void;
   onPickMusic?: (roomName: string) => void;
+  /** Called when now playing section is clicked */
+  onNowPlayingClick?: (roomName: string) => void;
   isPlayPauseLoading?: boolean;
   isNextLoading?: boolean;
   isPreviousLoading?: boolean;
@@ -38,6 +40,7 @@ export function GroupZone({
   onDeviceVolumeChange,
   onToggleMute,
   onPickMusic,
+  onNowPlayingClick,
   isPlayPauseLoading,
   isNextLoading,
   isPreviousLoading,
@@ -56,7 +59,7 @@ export function GroupZone({
       )}
     >
       <CardHeader className="pb-3 flex-shrink-0">
-        <GroupHeader zone={zone} />
+        <GroupHeader zone={zone} onNowPlayingClick={onNowPlayingClick} />
       </CardHeader>
 
       <CardContent className="space-y-4 pt-0 flex-1 flex flex-col min-h-0">

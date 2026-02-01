@@ -21,6 +21,7 @@ import { GroupZone } from './group-zone';
 import { UngroupedZone } from './ungrouped-zone';
 import { DraggableDeviceOverlay } from './draggable-device';
 import { MusicPicker } from '@/components/dashboard/music-picker';
+import { NowPlayingModal } from '@/components/dashboard/now-playing-modal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,9 @@ export function GroupsContainer() {
 
   // Track which room to show the music picker for
   const [musicPickerRoom, setMusicPickerRoom] = useState<string | null>(null);
+
+  // Track which room to show the now playing modal for
+  const [nowPlayingRoom, setNowPlayingRoom] = useState<string | null>(null);
 
   // Clear pending moves when server data updates and matches our expected state
   useEffect(() => {
@@ -356,6 +360,10 @@ export function GroupsContainer() {
     setMusicPickerRoom(roomName);
   }, []);
 
+  const handleNowPlayingClick = useCallback((roomName: string) => {
+    setNowPlayingRoom(roomName);
+  }, []);
+
   // Loading state
   if (isLoading) {
     return (
@@ -439,6 +447,7 @@ export function GroupsContainer() {
             onDeviceVolumeChange={handleDeviceVolumeChange}
             onToggleMute={handleToggleMute}
             onPickMusic={handlePickMusic}
+            onNowPlayingClick={handleNowPlayingClick}
             isPlayPauseLoading={
               playPauseMutation.isPending &&
               playPauseMutation.variables === zone.coordinatorRoom
@@ -463,6 +472,7 @@ export function GroupsContainer() {
           onNext={handleNext}
           onPrevious={handlePrevious}
           onPickMusic={handlePickMusic}
+          onNowPlayingClick={handleNowPlayingClick}
           playPauseLoadingRoom={playPauseMutation.isPending ? playPauseMutation.variables : undefined}
           nextLoadingRoom={nextMutation.isPending ? nextMutation.variables : undefined}
           previousLoadingRoom={previousMutation.isPending ? previousMutation.variables : undefined}
@@ -480,6 +490,15 @@ export function GroupsContainer() {
           roomName={musicPickerRoom}
           open={!!musicPickerRoom}
           onOpenChange={(open) => !open && setMusicPickerRoom(null)}
+        />
+      )}
+
+      {/* Now Playing Modal */}
+      {nowPlayingRoom && (
+        <NowPlayingModal
+          roomName={nowPlayingRoom}
+          open={!!nowPlayingRoom}
+          onOpenChange={(open) => !open && setNowPlayingRoom(null)}
         />
       )}
     </DndContext>

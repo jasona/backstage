@@ -18,9 +18,11 @@ import type { ZoneStatus } from '@/types/sonos';
 interface GroupHeaderProps {
   zone: ZoneStatus;
   className?: string;
+  /** Called when now playing section is clicked */
+  onNowPlayingClick?: (roomName: string) => void;
 }
 
-export function GroupHeader({ zone, className }: GroupHeaderProps) {
+export function GroupHeader({ zone, className, onNowPlayingClick }: GroupHeaderProps) {
   const isPlaying = zone.playbackState === 'PLAYING';
   const hasNowPlaying = zone.nowPlaying?.title;
   const memberCount = zone.memberIds.length;
@@ -59,7 +61,13 @@ export function GroupHeader({ zone, className }: GroupHeaderProps) {
       </div>
 
       {/* Now playing - fixed height container */}
-      <div className="h-[38px]">
+      <div
+        className={cn(
+          'h-[38px] rounded-md px-1 -mx-1 transition-colors',
+          hasNowPlaying && onNowPlayingClick && 'cursor-pointer hover:bg-hover'
+        )}
+        onClick={hasNowPlaying && onNowPlayingClick ? () => onNowPlayingClick(zone.coordinatorRoom) : undefined}
+      >
         {hasNowPlaying ? (
           <div className="flex items-start gap-2">
             <div

@@ -52,6 +52,8 @@ interface DeviceCardProps {
   onGroupManage?: (device: DeviceStatus) => void;
   /** Called when play is clicked on a stopped device with no queue */
   onPickMusic?: (roomName: string) => void;
+  /** Called when now playing section is clicked */
+  onNowPlayingClick?: (roomName: string) => void;
 }
 
 export function DeviceCard({
@@ -69,6 +71,7 @@ export function DeviceCard({
   onToggleMute,
   onGroupManage,
   onPickMusic,
+  onNowPlayingClick,
 }: DeviceCardProps) {
   const isPlaying = device.playbackState === 'PLAYING';
   const hasNowPlaying = device.nowPlaying?.title;
@@ -163,6 +166,16 @@ export function DeviceCard({
       onPickMusic?.(device.roomName);
     },
     [device.roomName, onPickMusic]
+  );
+
+  const handleNowPlayingClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (hasNowPlaying && onNowPlayingClick) {
+        onNowPlayingClick(device.roomName);
+      }
+    },
+    [device.roomName, hasNowPlaying, onNowPlayingClick]
   );
 
   return (
@@ -275,7 +288,13 @@ export function DeviceCard({
         </div>
 
         {/* Now Playing - fixed height container */}
-        <div className="space-y-0.5 h-[38px]">
+        <div
+          className={cn(
+            'space-y-0.5 h-[38px] rounded-md px-1 -mx-1 transition-colors',
+            hasNowPlaying && onNowPlayingClick && 'cursor-pointer hover:bg-hover'
+          )}
+          onClick={hasNowPlaying && onNowPlayingClick ? handleNowPlayingClick : undefined}
+        >
           {hasNowPlaying ? (
             <>
               <p className="text-sm font-medium text-foreground truncate">
