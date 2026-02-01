@@ -3,9 +3,10 @@
 /**
  * Now Playing modal that displays album art, track info, and music controls.
  * Opens when clicking on the song name in Dashboard or Groups screens.
+ * Shows grouped devices with individual volume controls when playing on multiple speakers.
  */
 
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import {
   useDevices,
+  useZoneStatuses,
   usePlayPause,
   useNext,
   usePrevious,
@@ -33,7 +35,10 @@ import {
   Disc3,
   Radio,
   Loader2,
+  Speaker,
+  Crown,
 } from 'lucide-react';
+import type { DeviceStatus } from '@/types/sonos';
 
 const VOLUME_DEBOUNCE_MS = 100;
 
@@ -53,8 +58,99 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Individual device volume control for grouped devices
+ */
+function DeviceVolumeControl({
+  device,
+  isCoordinator,
+  onVolumeChange,
+  onToggleMute,
+}: {
+  device: DeviceStatus;
+  isCoordinator: boolean;
+  onVolumeChange: (roomName: string, volume: number) => void;
+  onToggleMute: (roomName: string) => void;
+}) {
+  const [localVolume, setLocalVolume] = useState(device.volume);
+  const [isDragging, setIsDragging] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!isDragging) {
+      setLocalVolume(device.volume);
+    }
+  }, [device.volume, isDragging]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleVolumeChange = useCallback(
+    (value: number[]) => {
+      const newVolume = value[0];
+      setLocalVolume(newVolume);
+      setIsDragging(true);
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        onVolumeChange(device.roomName, newVolume);
+        setIsDragging(false);
+      }, VOLUME_DEBOUNCE_MS);
+    },
+    [device.roomName, onVolumeChange]
+  );
+
+  const handleToggleMute = useCallback(() => {
+    onToggleMute(device.roomName);
+  }, [device.roomName, onToggleMute]);
+
+  return (
+    <div className="flex items-center gap-2 py-2">
+      <div className="flex items-center gap-2 w-28 flex-shrink-0">
+        {isCoordinator ? (
+          <Crown className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+        ) : (
+          <Speaker className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        )}
+        <span className="text-sm text-foreground truncate">{device.roomName}</span>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6 text-muted-foreground hover:text-foreground flex-shrink-0"
+        onClick={handleToggleMute}
+      >
+        {device.muted ? (
+          <VolumeX className="w-3.5 h-3.5" />
+        ) : (
+          <Volume2 className="w-3.5 h-3.5" />
+        )}
+      </Button>
+      <Slider
+        value={[device.muted ? 0 : localVolume]}
+        max={100}
+        step={1}
+        onValueChange={handleVolumeChange}
+        className="flex-1"
+      />
+      <span className="text-xs text-muted-foreground w-8 text-right flex-shrink-0">
+        {localVolume}%
+      </span>
+    </div>
+  );
+}
+
 export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModalProps) {
   const { devices } = useDevices();
+  const { zoneStatuses } = useZoneStatuses();
   const device = devices.find((d) => d.roomName === roomName);
 
   const playPauseMutation = usePlayPause();
@@ -63,7 +159,28 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
   const volumeMutation = useVolume();
   const toggleMuteMutation = useToggleMute();
 
-  // Local volume state for immediate UI feedback
+  // Find the zone for this device and get all grouped devices
+  const zone = useMemo(() => {
+    if (!device) return null;
+    return zoneStatuses.find((z) => z.memberIds.includes(device.id));
+  }, [device, zoneStatuses]);
+
+  const groupedDevices = useMemo(() => {
+    if (!zone) return [];
+    // Get all devices in this zone, sorted with coordinator first
+    return devices
+      .filter((d) => zone.memberIds.includes(d.id))
+      .sort((a, b) => {
+        if (a.isCoordinator) return -1;
+        if (b.isCoordinator) return 1;
+        return a.roomName.localeCompare(b.roomName);
+      });
+  }, [zone, devices]);
+
+  const isGrouped = groupedDevices.length > 1;
+  const coordinatorDevice = groupedDevices.find((d) => d.isCoordinator) || device;
+
+  // Local volume state for immediate UI feedback (used for single device mode)
   const [localVolume, setLocalVolume] = useState(device?.volume ?? 50);
   const [isDragging, setIsDragging] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -85,22 +202,22 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
   }, []);
 
   const handlePlayPause = useCallback(() => {
-    if (device) {
-      playPauseMutation.mutate(device.roomName);
+    if (coordinatorDevice) {
+      playPauseMutation.mutate(coordinatorDevice.roomName);
     }
-  }, [device, playPauseMutation]);
+  }, [coordinatorDevice, playPauseMutation]);
 
   const handleNext = useCallback(() => {
-    if (device) {
-      nextMutation.mutate(device.roomName);
+    if (coordinatorDevice) {
+      nextMutation.mutate(coordinatorDevice.roomName);
     }
-  }, [device, nextMutation]);
+  }, [coordinatorDevice, nextMutation]);
 
   const handlePrevious = useCallback(() => {
-    if (device) {
-      previousMutation.mutate(device.roomName);
+    if (coordinatorDevice) {
+      previousMutation.mutate(coordinatorDevice.roomName);
     }
-  }, [device, previousMutation]);
+  }, [coordinatorDevice, previousMutation]);
 
   const handleVolumeChange = useCallback(
     (value: number[]) => {
@@ -120,6 +237,20 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
       }, VOLUME_DEBOUNCE_MS);
     },
     [device, volumeMutation]
+  );
+
+  const handleDeviceVolumeChange = useCallback(
+    (deviceRoomName: string, volume: number) => {
+      volumeMutation.mutate({ roomName: deviceRoomName, volume });
+    },
+    [volumeMutation]
+  );
+
+  const handleDeviceToggleMute = useCallback(
+    (deviceRoomName: string) => {
+      toggleMuteMutation.mutate(deviceRoomName);
+    },
+    [toggleMuteMutation]
   );
 
   const handleToggleMute = useCallback(() => {
@@ -145,149 +276,177 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={cn('sm:max-w-md', isGrouped && 'sm:max-w-2xl')}>
         <DialogHeader>
-          <DialogTitle>Now Playing on {roomName}</DialogTitle>
+          <DialogTitle>
+            Now Playing on {isGrouped ? `${groupedDevices.length} speakers` : roomName}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Album Art or Placeholder */}
-          <div className="flex justify-center">
-            <div className="w-48 h-48 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-              {nowPlaying?.albumArtUri ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={nowPlaying.albumArtUri}
-                  alt={nowPlaying.album || nowPlaying.title || 'Album art'}
-                  className="w-full h-full object-cover"
-                />
-              ) : isRadio ? (
-                <Radio className="w-20 h-20 text-muted-foreground" />
+        <div className={cn('flex gap-6', isGrouped ? 'flex-row' : 'flex-col')}>
+          {/* Main Content - Now Playing */}
+          <div className={cn('space-y-6', isGrouped && 'flex-1')}>
+            {/* Album Art or Placeholder */}
+            <div className="flex justify-center">
+              <div className={cn(
+                'rounded-lg bg-muted flex items-center justify-center overflow-hidden',
+                isGrouped ? 'w-40 h-40' : 'w-48 h-48'
+              )}>
+                {nowPlaying?.albumArtUri ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={nowPlaying.albumArtUri}
+                    alt={nowPlaying.album || nowPlaying.title || 'Album art'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : isRadio ? (
+                  <Radio className={cn(isGrouped ? 'w-16 h-16' : 'w-20 h-20', 'text-muted-foreground')} />
+                ) : (
+                  <Disc3 className={cn(isGrouped ? 'w-16 h-16' : 'w-20 h-20', 'text-muted-foreground')} />
+                )}
+              </div>
+            </div>
+
+            {/* Track Info */}
+            <div className="text-center space-y-1">
+              {hasTrack ? (
+                <>
+                  <p className="text-lg font-semibold text-foreground truncate">
+                    {isRadio && nowPlaying?.stationName ? nowPlaying.stationName : nowPlaying?.title}
+                  </p>
+                  {nowPlaying?.artist && (
+                    <p className="text-sm text-muted-foreground truncate">
+                      {nowPlaying.artist}
+                    </p>
+                  )}
+                  {nowPlaying?.album && !isRadio && (
+                    <p className="text-sm text-muted-foreground truncate">
+                      {nowPlaying.album}
+                    </p>
+                  )}
+                </>
               ) : (
-                <Disc3 className="w-20 h-20 text-muted-foreground" />
+                <p className="text-muted-foreground">Not playing</p>
               )}
             </div>
-          </div>
 
-          {/* Track Info */}
-          <div className="text-center space-y-1">
-            {hasTrack ? (
-              <>
-                <p className="text-lg font-semibold text-foreground truncate">
-                  {isRadio && nowPlaying?.stationName ? nowPlaying.stationName : nowPlaying?.title}
-                </p>
-                {nowPlaying?.artist && (
-                  <p className="text-sm text-muted-foreground truncate">
-                    {nowPlaying.artist}
-                  </p>
+            {/* Progress Bar (only show for tracks with duration) */}
+            {hasDuration && (
+              <div className="space-y-2">
+                <Slider
+                  value={[progressPercent]}
+                  max={100}
+                  step={0.1}
+                  disabled
+                  className="cursor-default"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{formatTime(nowPlaying?.position ?? 0)}</span>
+                  <span>{formatTime(nowPlaying?.duration ?? 0)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Playback Controls */}
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                onClick={handlePrevious}
+                disabled={previousMutation.isPending}
+              >
+                {previousMutation.isPending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <SkipBack className="w-5 h-5" />
                 )}
-                {nowPlaying?.album && !isRadio && (
-                  <p className="text-sm text-muted-foreground truncate">
-                    {nowPlaying.album}
-                  </p>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  'h-14 w-14',
+                  isPlaying
+                    ? 'text-primary hover:text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
-              </>
-            ) : (
-              <p className="text-muted-foreground">Not playing</p>
+                onClick={handlePlayPause}
+                disabled={playPauseMutation.isPending}
+              >
+                {playPauseMutation.isPending ? (
+                  <Loader2 className="w-7 h-7 animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="w-7 h-7" />
+                ) : (
+                  <Play className="w-7 h-7" />
+                )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                onClick={handleNext}
+                disabled={nextMutation.isPending}
+              >
+                {nextMutation.isPending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <SkipForward className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
+
+            {/* Volume Control (only show for single device) */}
+            {!isGrouped && (
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground flex-shrink-0"
+                  onClick={handleToggleMute}
+                >
+                  {device.muted ? (
+                    <VolumeX className="w-4 h-4" />
+                  ) : (
+                    <Volume2 className="w-4 h-4" />
+                  )}
+                </Button>
+
+                <Slider
+                  value={[device.muted ? 0 : localVolume]}
+                  max={100}
+                  step={1}
+                  onValueChange={handleVolumeChange}
+                  className="flex-1"
+                />
+
+                <span className="text-sm text-muted-foreground w-10 text-right flex-shrink-0">
+                  {localVolume}%
+                </span>
+              </div>
             )}
           </div>
 
-          {/* Progress Bar (only show for tracks with duration) */}
-          {hasDuration && (
-            <div className="space-y-2">
-              <Slider
-                value={[progressPercent]}
-                max={100}
-                step={0.1}
-                disabled
-                className="cursor-default"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{formatTime(nowPlaying?.position ?? 0)}</span>
-                <span>{formatTime(nowPlaying?.duration ?? 0)}</span>
+          {/* Grouped Devices Pane */}
+          {isGrouped && (
+            <div className="w-64 flex-shrink-0 border-l border-border pl-6">
+              <h4 className="text-sm font-medium text-foreground mb-3">Speakers</h4>
+              <div className="space-y-1">
+                {groupedDevices.map((groupDevice) => (
+                  <DeviceVolumeControl
+                    key={groupDevice.id}
+                    device={groupDevice}
+                    isCoordinator={groupDevice.isCoordinator}
+                    onVolumeChange={handleDeviceVolumeChange}
+                    onToggleMute={handleDeviceToggleMute}
+                  />
+                ))}
               </div>
             </div>
           )}
-
-          {/* Playback Controls */}
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 text-muted-foreground hover:text-foreground"
-              onClick={handlePrevious}
-              disabled={previousMutation.isPending}
-            >
-              {previousMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <SkipBack className="w-5 h-5" />
-              )}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                'h-14 w-14',
-                isPlaying
-                  ? 'text-primary hover:text-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              onClick={handlePlayPause}
-              disabled={playPauseMutation.isPending}
-            >
-              {playPauseMutation.isPending ? (
-                <Loader2 className="w-7 h-7 animate-spin" />
-              ) : isPlaying ? (
-                <Pause className="w-7 h-7" />
-              ) : (
-                <Play className="w-7 h-7" />
-              )}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 text-muted-foreground hover:text-foreground"
-              onClick={handleNext}
-              disabled={nextMutation.isPending}
-            >
-              {nextMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <SkipForward className="w-5 h-5" />
-              )}
-            </Button>
-          </div>
-
-          {/* Volume Control */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground flex-shrink-0"
-              onClick={handleToggleMute}
-            >
-              {device.muted ? (
-                <VolumeX className="w-4 h-4" />
-              ) : (
-                <Volume2 className="w-4 h-4" />
-              )}
-            </Button>
-
-            <Slider
-              value={[device.muted ? 0 : localVolume]}
-              max={100}
-              step={1}
-              onValueChange={handleVolumeChange}
-              className="flex-1"
-            />
-
-            <span className="text-sm text-muted-foreground w-10 text-right flex-shrink-0">
-              {localVolume}%
-            </span>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
