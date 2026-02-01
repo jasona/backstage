@@ -13,9 +13,11 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
+  pointerWithin,
   closestCenter,
   DragStartEvent,
   DragEndEvent,
+  CollisionDetection,
 } from '@dnd-kit/core';
 import { GroupZone } from './group-zone';
 import { UngroupedZone } from './ungrouped-zone';
@@ -106,6 +108,18 @@ export function GroupsContainer() {
     }),
     useSensor(KeyboardSensor)
   );
+
+  // Custom collision detection: prefer pointerWithin (for accurate zone detection),
+  // fall back to closestCenter when pointer isn't inside any droppable
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    // First check if pointer is inside any droppable
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+    // Fall back to closest center when pointer is between zones
+    return closestCenter(args);
+  }, []);
 
   // Apply pending moves to create optimistic device list
   const optimisticDevices = useMemo(() => {
@@ -259,22 +273,33 @@ export function GroupsContainer() {
         // Don't join if already in the same group
         if (device.groupId === targetDevice.groupId) return;
 
-        // Add optimistic move - join the target device's zone (which will become a group)
+        // Determine which device should be the coordinator (the one playing music)
+        // to preserve playback when grouping
+        const draggedIsPlaying = device.playbackState === 'PLAYING' || device.playbackState === 'PAUSED_PLAYBACK';
+        const targetIsPlaying = targetDevice.playbackState === 'PLAYING' || targetDevice.playbackState === 'PAUSED_PLAYBACK';
+
+        // If dragged device is playing but target is not, make target join dragged
+        // Otherwise, make dragged join target (default behavior)
+        const shouldReverseJoin = draggedIsPlaying && !targetIsPlaying;
+        const joiningDevice = shouldReverseJoin ? targetDevice : device;
+        const coordinatorDevice = shouldReverseJoin ? device : targetDevice;
+
+        // Add optimistic move - the joining device moves to the coordinator's zone
         setPendingMoves((prev) => [
-          ...prev.filter((m) => m.deviceId !== device.id),
-          { deviceId: device.id, targetZoneId: targetDevice.groupId },
+          ...prev.filter((m) => m.deviceId !== joiningDevice.id),
+          { deviceId: joiningDevice.id, targetZoneId: coordinatorDevice.groupId },
         ]);
 
-        // Fire mutation - join the dragged device to the target device's room
+        // Fire mutation - join the non-playing device to the playing device's room
         joinGroupMutation.mutate(
-          { roomName: device.roomName, targetRoom: targetDevice.roomName },
+          { roomName: joiningDevice.roomName, targetRoom: coordinatorDevice.roomName },
           {
             onSuccess: () => {
-              toast.success(`Created group: ${targetDevice.roomName} + ${device.roomName}`);
+              toast.success(`Created group: ${coordinatorDevice.roomName} + ${joiningDevice.roomName}`);
             },
             onError: (err) => {
               // Remove pending move on error
-              setPendingMoves((prev) => prev.filter((m) => m.deviceId !== device.id));
+              setPendingMoves((prev) => prev.filter((m) => m.deviceId !== joiningDevice.id));
               toast.error(`Failed to create group`);
               console.error('Join group error:', err);
             },
@@ -429,7 +454,7 @@ export function GroupsContainer() {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
