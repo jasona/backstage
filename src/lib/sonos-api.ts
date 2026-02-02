@@ -320,6 +320,23 @@ export async function getRoomState(roomName: string): Promise<SonosZone | undefi
 }
 
 /**
+ * Get the current playback position for a room
+ * Returns elapsed time in seconds, or 0 if unavailable
+ */
+export async function getPlaybackPosition(roomName: string): Promise<number> {
+  try {
+    const response = await apiRequest<unknown>(`/${encodeURIComponent(roomName)}/state`);
+    if (response && typeof response === 'object') {
+      const data = response as Record<string, unknown>;
+      return typeof data.elapsedTime === 'number' ? data.elapsedTime : 0;
+    }
+    return 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Check if the API is reachable
  */
 export async function checkConnection(): Promise<boolean> {

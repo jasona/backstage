@@ -25,6 +25,7 @@ import {
   useVolume,
   useToggleMute,
 } from '@/hooks/use-sonos';
+import { getPlaybackPosition } from '@/lib/sonos-api';
 import {
   Play,
   Pause,
@@ -207,10 +208,59 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
   // Track if album art failed to load
   const [albumArtError, setAlbumArtError] = useState(false);
 
+  // Local position state for smooth progress updates between API refreshes
+  const [localPosition, setLocalPosition] = useState(0);
+  const lastSyncedTrackRef = useRef<string | null>(null);
+  const wasOpenRef = useRef(false);
+
   // Reset album art error when the URI changes
   useEffect(() => {
     setAlbumArtError(false);
   }, [device?.nowPlaying?.albumArtUri, device?.nowPlaying?.absoluteAlbumArtUri]);
+
+  // Fetch actual position from API when modal opens or track changes
+  useEffect(() => {
+    if (!open) {
+      // Reset tracking when modal closes so next open will sync
+      wasOpenRef.current = false;
+      lastSyncedTrackRef.current = null;
+      return;
+    }
+
+    const currentTrack = device?.nowPlaying?.title ?? '';
+    const justOpened = !wasOpenRef.current;
+    const trackChanged = currentTrack !== lastSyncedTrackRef.current;
+
+    // Fetch position when modal just opened or track changes
+    if (justOpened || trackChanged) {
+      lastSyncedTrackRef.current = currentTrack;
+      wasOpenRef.current = true;
+
+      // Fetch the actual position from the state endpoint
+      const targetRoom = coordinatorDevice?.roomName || roomName;
+      getPlaybackPosition(targetRoom).then((position) => {
+        setLocalPosition(position);
+      });
+    }
+  }, [open, device?.nowPlaying?.title, coordinatorDevice?.roomName, roomName]);
+
+  // Interpolate position every second when playing
+  useEffect(() => {
+    if (!open || device?.playbackState !== 'PLAYING' || !device?.nowPlaying?.duration) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setLocalPosition((prev) => {
+        const duration = device?.nowPlaying?.duration ?? 0;
+        // Don't exceed duration
+        if (prev >= duration) return prev;
+        return prev + 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [open, device?.playbackState, device?.nowPlaying?.duration]);
 
   // Sync local volume with device volume when not dragging
   useEffect(() => {
@@ -296,10 +346,13 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
   const isRadio = nowPlaying?.type === 'radio' || !!nowPlaying?.stationName;
   const hasDuration = nowPlaying?.duration && nowPlaying.duration > 0;
 
-  // Calculate progress percentage
-  const progressPercent = hasDuration && nowPlaying?.position
-    ? (nowPlaying.position / nowPlaying.duration) * 100
+  // Calculate progress percentage using local position for smooth updates
+  const progressPercent = hasDuration
+    ? (localPosition / nowPlaying.duration) * 100
     : 0;
+
+  // Calculate remaining time
+  const remainingTime = hasDuration ? Math.max(0, nowPlaying.duration - localPosition) : 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -369,8 +422,8 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
                   className="cursor-default"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{formatTime(nowPlaying?.position ?? 0)}</span>
-                  <span>{formatTime(nowPlaying?.duration ?? 0)}</span>
+                  <span>{formatTime(localPosition)}</span>
+                  <span>-{formatTime(remainingTime)}</span>
                 </div>
               </div>
             )}
