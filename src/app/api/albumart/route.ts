@@ -6,6 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+const SONOS_API_URL = process.env.SONOS_API_URL || process.env.NEXT_PUBLIC_SONOS_API_URL || 'http://localhost:5005';
+
 export async function GET(request: NextRequest) {
   const url = request.nextUrl.searchParams.get('url');
 
@@ -20,7 +22,17 @@ export async function GET(request: NextRequest) {
     // Decode the URL if it was encoded
     const decodedUrl = decodeURIComponent(url);
 
-    const response = await fetch(decodedUrl, {
+    // Determine the full URL to fetch
+    let fetchUrl: string;
+    if (decodedUrl.startsWith('/')) {
+      // Relative path - prepend the Sonos API URL
+      fetchUrl = `${SONOS_API_URL}${decodedUrl}`;
+    } else {
+      // Full URL - use as-is
+      fetchUrl = decodedUrl;
+    }
+
+    const response = await fetch(fetchUrl, {
       headers: {
         // Some servers require a user agent
         'User-Agent': 'Backstage/1.0',
@@ -29,6 +41,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
+      console.error(`Album art fetch failed: ${response.status} ${response.statusText} for ${fetchUrl}`);
       return NextResponse.json(
         { error: `Failed to fetch image: ${response.statusText}` },
         { status: response.status }

@@ -63,11 +63,18 @@ function formatTime(seconds: number): string {
  */
 function getProxiedAlbumArtUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
-  // Proxy HTTP URLs through our API to avoid mixed content blocking
-  // HTTPS URLs can be used directly
+
+  // Relative paths (like /getaa?...) need to go through the Sonos API proxy
+  if (url.startsWith('/')) {
+    return `/api/albumart?url=${encodeURIComponent(url)}`;
+  }
+
+  // HTTP URLs need to be proxied to avoid mixed content blocking
   if (url.startsWith('http://')) {
     return `/api/albumart?url=${encodeURIComponent(url)}`;
   }
+
+  // HTTPS URLs can be used directly
   return url;
 }
 
