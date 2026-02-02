@@ -25,32 +25,26 @@ export async function GET(request: NextRequest) {
     if (b64) {
       decodedUrl = Buffer.from(b64, 'base64').toString('utf-8');
     } else {
-      decodedUrl = decodeURIComponent(url!);
+      decodedUrl = url!;
     }
 
-    // Fully decode any remaining percent-encoded characters
-    // Some Sonos URLs come with inconsistent encoding (mix of single and double encoded)
-    let fullyDecoded = decodedUrl;
-    // Keep decoding until no more changes (handles double/triple encoding)
-    let prev = '';
-    while (prev !== fullyDecoded) {
-      prev = fullyDecoded;
-      try {
-        fullyDecoded = decodeURIComponent(fullyDecoded);
-      } catch {
-        // Stop if we hit invalid encoding
-        break;
-      }
+    // Normalize double-encoded sequences (%25XX -> %XX)
+    // but don't fully decode as that would break query parameter structure
+    let normalized = decodedUrl;
+    // Replace %25 (encoded %) with % to fix double-encoding
+    // Keep doing it until no more double-encoding exists
+    while (normalized.includes('%25')) {
+      normalized = normalized.replace(/%25/g, '%');
     }
 
     // Determine the full URL to fetch
     let fetchUrl: string;
-    if (fullyDecoded.startsWith('/')) {
+    if (normalized.startsWith('/')) {
       // Relative path - prepend the Sonos API URL
-      fetchUrl = `${SONOS_API_URL}${fullyDecoded}`;
+      fetchUrl = `${SONOS_API_URL}${normalized}`;
     } else {
       // Full URL - use as-is
-      fetchUrl = fullyDecoded;
+      fetchUrl = normalized;
     }
 
     const response = await fetch(fetchUrl, {
