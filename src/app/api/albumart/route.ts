@@ -10,6 +10,7 @@ const SONOS_API_URL = process.env.SONOS_API_URL || process.env.NEXT_PUBLIC_SONOS
 
 export async function GET(request: NextRequest) {
   const b64 = request.nextUrl.searchParams.get('b64');
+  const room = request.nextUrl.searchParams.get('room');
   const url = request.nextUrl.searchParams.get('url');
 
   if (!b64 && !url) {
@@ -39,13 +40,26 @@ export async function GET(request: NextRequest) {
 
     // Determine the full URL to fetch
     let fetchUrl: string;
-    if (normalized.startsWith('/')) {
-      // Relative path - prepend the Sonos API URL
+    if (normalized.startsWith('/getaa')) {
+      // Album art from Sonos - needs room name prefix for the HTTP API
+      if (!room) {
+        return NextResponse.json(
+          { error: 'Missing room parameter for album art' },
+          { status: 400 }
+        );
+      }
+      // Convert /getaa?... to /{room}/getaa?...
+      const encodedRoom = encodeURIComponent(room);
+      fetchUrl = `${SONOS_API_URL}/${encodedRoom}${normalized}`;
+    } else if (normalized.startsWith('/')) {
+      // Other relative path - prepend the Sonos API URL
       fetchUrl = `${SONOS_API_URL}${normalized}`;
     } else {
       // Full URL - use as-is
       fetchUrl = normalized;
     }
+
+    console.log('Fetching album art from:', fetchUrl);
 
     const response = await fetch(fetchUrl, {
       headers: {

@@ -22,6 +22,7 @@ export const NowPlayingSchema = z.object({
   title: z.string().default(''),
   album: z.string().default(''),
   albumArtUri: z.string().optional(),
+  absoluteAlbumArtUri: z.string().optional(), // Full URL with Sonos speaker IP
   duration: z.number().default(0),
   position: z.number().default(0),
   type: z.string().default(''),

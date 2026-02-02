@@ -12,6 +12,7 @@ export interface NowPlaying {
   title: string;
   album: string;
   albumArtUri?: string;
+  absoluteAlbumArtUri?: string; // Full URL with Sonos speaker IP
   duration: number;
   position: number;
   type: string;

@@ -62,7 +62,7 @@ function formatTime(seconds: number): string {
  * Get proxied album art URL to avoid mixed content issues
  * Uses base64 encoding to avoid URL encoding issues with special characters
  */
-function getProxiedAlbumArtUrl(url: string | undefined): string | undefined {
+function getProxiedAlbumArtUrl(url: string | undefined, roomName: string): string | undefined {
   if (!url) return undefined;
 
   // HTTPS URLs can be used directly (no mixed content issue)
@@ -73,7 +73,8 @@ function getProxiedAlbumArtUrl(url: string | undefined): string | undefined {
   // Relative paths and HTTP URLs need to go through our proxy
   // Use base64 encoding to avoid double-encoding issues
   const encoded = btoa(url);
-  return `/api/albumart?b64=${encoded}`;
+  // Include room name for /getaa requests which need it
+  return `/api/albumart?b64=${encoded}&room=${encodeURIComponent(roomName)}`;
 }
 
 /**
@@ -209,7 +210,7 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
   // Reset album art error when the URI changes
   useEffect(() => {
     setAlbumArtError(false);
-  }, [device?.nowPlaying?.albumArtUri]);
+  }, [device?.nowPlaying?.albumArtUri, device?.nowPlaying?.absoluteAlbumArtUri]);
 
   // Sync local volume with device volume when not dragging
   useEffect(() => {
@@ -318,10 +319,10 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
                 'rounded-lg bg-muted flex items-center justify-center overflow-hidden',
                 isGrouped ? 'w-40 h-40' : 'w-48 h-48'
               )}>
-                {nowPlaying?.albumArtUri && !albumArtError ? (
+                {(nowPlaying?.absoluteAlbumArtUri || nowPlaying?.albumArtUri) && !albumArtError ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={getProxiedAlbumArtUrl(nowPlaying.albumArtUri)}
+                    src={getProxiedAlbumArtUrl(nowPlaying.absoluteAlbumArtUri || nowPlaying.albumArtUri, coordinatorDevice?.roomName || roomName)}
                     alt={nowPlaying.album || nowPlaying.title || 'Album art'}
                     className="w-full h-full object-cover"
                     onError={() => setAlbumArtError(true)}
