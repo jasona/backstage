@@ -434,7 +434,7 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
               {hasTrack ? (
                 <>
                   <p className="text-lg font-semibold text-foreground truncate">
-                    {isRadio && nowPlaying?.stationName ? nowPlaying.stationName : nowPlaying?.title}
+                    {nowPlaying?.title}
                   </p>
                   {nowPlaying?.artist && (
                     <p className="text-sm text-muted-foreground truncate">
@@ -444,6 +444,11 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
                   {nowPlaying?.album && !isRadio && (
                     <p className="text-sm text-muted-foreground truncate">
                       {nowPlaying.album}
+                    </p>
+                  )}
+                  {isRadio && nowPlaying?.stationName && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {nowPlaying.stationName}
                     </p>
                   )}
                 </>
