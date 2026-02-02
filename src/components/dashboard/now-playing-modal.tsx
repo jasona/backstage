@@ -59,6 +59,19 @@ function formatTime(seconds: number): string {
 }
 
 /**
+ * Get proxied album art URL to avoid mixed content issues
+ */
+function getProxiedAlbumArtUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  // Proxy HTTP URLs through our API to avoid mixed content blocking
+  // HTTPS URLs can be used directly
+  if (url.startsWith('http://')) {
+    return `/api/albumart?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
+/**
  * Individual device volume control for grouped devices
  */
 function DeviceVolumeControl({
@@ -303,7 +316,7 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
                 {nowPlaying?.albumArtUri && !albumArtError ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={nowPlaying.albumArtUri}
+                    src={getProxiedAlbumArtUrl(nowPlaying.albumArtUri)}
                     alt={nowPlaying.album || nowPlaying.title || 'Album art'}
                     className="w-full h-full object-cover"
                     onError={() => setAlbumArtError(true)}
