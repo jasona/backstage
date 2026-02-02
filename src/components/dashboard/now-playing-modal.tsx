@@ -60,22 +60,20 @@ function formatTime(seconds: number): string {
 
 /**
  * Get proxied album art URL to avoid mixed content issues
+ * Uses base64 encoding to avoid URL encoding issues with special characters
  */
 function getProxiedAlbumArtUrl(url: string | undefined): string | undefined {
   if (!url) return undefined;
 
-  // Relative paths (like /getaa?...) need to go through the Sonos API proxy
-  if (url.startsWith('/')) {
-    return `/api/albumart?url=${encodeURIComponent(url)}`;
+  // HTTPS URLs can be used directly (no mixed content issue)
+  if (url.startsWith('https://')) {
+    return url;
   }
 
-  // HTTP URLs need to be proxied to avoid mixed content blocking
-  if (url.startsWith('http://')) {
-    return `/api/albumart?url=${encodeURIComponent(url)}`;
-  }
-
-  // HTTPS URLs can be used directly
-  return url;
+  // Relative paths and HTTP URLs need to go through our proxy
+  // Use base64 encoding to avoid double-encoding issues
+  const encoded = btoa(url);
+  return `/api/albumart?b64=${encoded}`;
 }
 
 /**

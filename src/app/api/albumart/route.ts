@@ -9,18 +9,24 @@ import { NextRequest, NextResponse } from 'next/server';
 const SONOS_API_URL = process.env.SONOS_API_URL || process.env.NEXT_PUBLIC_SONOS_API_URL || 'http://localhost:5005';
 
 export async function GET(request: NextRequest) {
+  const b64 = request.nextUrl.searchParams.get('b64');
   const url = request.nextUrl.searchParams.get('url');
 
-  if (!url) {
+  if (!b64 && !url) {
     return NextResponse.json(
-      { error: 'Missing url parameter' },
+      { error: 'Missing url or b64 parameter' },
       { status: 400 }
     );
   }
 
   try {
-    // Decode the URL if it was encoded
-    const decodedUrl = decodeURIComponent(url);
+    // Decode the URL - prefer base64 encoding to avoid double-encoding issues
+    let decodedUrl: string;
+    if (b64) {
+      decodedUrl = Buffer.from(b64, 'base64').toString('utf-8');
+    } else {
+      decodedUrl = decodeURIComponent(url!);
+    }
 
     // Determine the full URL to fetch
     let fetchUrl: string;
