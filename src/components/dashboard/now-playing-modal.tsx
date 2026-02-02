@@ -23,6 +23,7 @@ import {
   useNext,
   usePrevious,
   useVolume,
+  useGroupVolume,
   useToggleMute,
 } from '@/hooks/use-sonos';
 import { getPlaybackPosition } from '@/lib/sonos-api';
@@ -79,7 +80,7 @@ function getProxiedAlbumArtUrl(url: string | undefined, roomName: string): strin
 }
 
 /**
- * Individual device volume control for grouped devices
+ * Individual device volume control for grouped devices - vertical layout
  */
 function DeviceVolumeControl({
   device,
@@ -133,37 +134,41 @@ function DeviceVolumeControl({
   }, [device.roomName, onToggleMute]);
 
   return (
-    <div className="flex items-center gap-2 py-2">
-      <div className="flex items-center gap-2 w-28 flex-shrink-0">
-        {isCoordinator ? (
-          <Crown className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-        ) : (
-          <Speaker className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-        )}
-        <span className="text-sm text-foreground truncate">{device.roomName}</span>
+    <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {isCoordinator ? (
+            <Crown className="w-3 h-3 text-primary flex-shrink-0" />
+          ) : (
+            <Speaker className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+          )}
+          <span className="text-xs font-medium text-foreground truncate">{device.roomName}</span>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 text-muted-foreground hover:text-foreground"
+            onClick={handleToggleMute}
+          >
+            {device.muted ? (
+              <VolumeX className="w-3 h-3" />
+            ) : (
+              <Volume2 className="w-3 h-3" />
+            )}
+          </Button>
+          <span className="text-xs text-muted-foreground w-7 text-right">
+            {localVolume}%
+          </span>
+        </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 text-muted-foreground hover:text-foreground flex-shrink-0"
-        onClick={handleToggleMute}
-      >
-        {device.muted ? (
-          <VolumeX className="w-3.5 h-3.5" />
-        ) : (
-          <Volume2 className="w-3.5 h-3.5" />
-        )}
-      </Button>
       <Slider
         value={[device.muted ? 0 : localVolume]}
         max={100}
         step={1}
         onValueChange={handleVolumeChange}
-        className="flex-1"
+        className="w-full"
       />
-      <span className="text-xs text-muted-foreground w-8 text-right flex-shrink-0">
-        {localVolume}%
-      </span>
     </div>
   );
 }
@@ -177,6 +182,7 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
   const nextMutation = useNext();
   const previousMutation = usePrevious();
   const volumeMutation = useVolume();
+  const groupVolumeMutation = useGroupVolume();
   const toggleMuteMutation = useToggleMute();
 
   // Find the zone for this device and get all grouped devices
@@ -204,6 +210,11 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
   const [localVolume, setLocalVolume] = useState(device?.volume ?? 50);
   const [isDragging, setIsDragging] = useState(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Group volume state for immediate UI feedback
+  const [localGroupVolume, setLocalGroupVolume] = useState(zone?.volume ?? 50);
+  const [isGroupDragging, setIsGroupDragging] = useState(false);
+  const groupDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track if album art failed to load
   const [albumArtError, setAlbumArtError] = useState(false);
@@ -269,11 +280,21 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
     }
   }, [device?.volume, isDragging, device]);
 
-  // Cleanup debounce timer on unmount
+  // Sync group volume when not dragging
+  useEffect(() => {
+    if (!isGroupDragging && zone) {
+      setLocalGroupVolume(zone.volume);
+    }
+  }, [zone?.volume, isGroupDragging, zone]);
+
+  // Cleanup debounce timers on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+      }
+      if (groupDebounceTimerRef.current) {
+        clearTimeout(groupDebounceTimerRef.current);
       }
     };
   }, []);
@@ -335,6 +356,26 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
       toggleMuteMutation.mutate(device.roomName);
     }
   }, [device, toggleMuteMutation]);
+
+  const handleGroupVolumeChange = useCallback(
+    (value: number[]) => {
+      const newVolume = value[0];
+      setLocalGroupVolume(newVolume);
+      setIsGroupDragging(true);
+
+      if (groupDebounceTimerRef.current) {
+        clearTimeout(groupDebounceTimerRef.current);
+      }
+
+      groupDebounceTimerRef.current = setTimeout(() => {
+        if (coordinatorDevice) {
+          groupVolumeMutation.mutate({ roomName: coordinatorDevice.roomName, volume: newVolume });
+        }
+        setIsGroupDragging(false);
+      }, VOLUME_DEBOUNCE_MS);
+    },
+    [coordinatorDevice, groupVolumeMutation]
+  );
 
   if (!device) {
     return null;
@@ -514,17 +555,35 @@ export function NowPlayingModal({ roomName, open, onOpenChange }: NowPlayingModa
           {/* Grouped Devices Pane */}
           {isGrouped && (
             <div className="w-64 flex-shrink-0 border-l border-border pl-6">
-              <h4 className="text-sm font-medium text-foreground mb-3">Speakers</h4>
-              <div className="space-y-1">
-                {groupedDevices.map((groupDevice) => (
-                  <DeviceVolumeControl
-                    key={groupDevice.id}
-                    device={groupDevice}
-                    isCoordinator={groupDevice.isCoordinator}
-                    onVolumeChange={handleDeviceVolumeChange}
-                    onToggleMute={handleDeviceToggleMute}
-                  />
-                ))}
+              {/* Group Volume Control */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-foreground">All Speakers</span>
+                  <span className="text-xs text-muted-foreground">{localGroupVolume}%</span>
+                </div>
+                <Slider
+                  value={[localGroupVolume]}
+                  max={100}
+                  step={1}
+                  onValueChange={handleGroupVolumeChange}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Individual Speaker Controls */}
+              <div className="border-t border-border pt-3">
+                <h4 className="text-xs font-medium text-muted-foreground mb-3">Individual</h4>
+                <div className="space-y-3">
+                  {groupedDevices.map((groupDevice) => (
+                    <DeviceVolumeControl
+                      key={groupDevice.id}
+                      device={groupDevice}
+                      isCoordinator={groupDevice.isCoordinator}
+                      onVolumeChange={handleDeviceVolumeChange}
+                      onToggleMute={handleDeviceToggleMute}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           )}
