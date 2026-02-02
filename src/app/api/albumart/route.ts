@@ -28,14 +28,29 @@ export async function GET(request: NextRequest) {
       decodedUrl = decodeURIComponent(url!);
     }
 
+    // Fully decode any remaining percent-encoded characters
+    // Some Sonos URLs come with inconsistent encoding (mix of single and double encoded)
+    let fullyDecoded = decodedUrl;
+    // Keep decoding until no more changes (handles double/triple encoding)
+    let prev = '';
+    while (prev !== fullyDecoded) {
+      prev = fullyDecoded;
+      try {
+        fullyDecoded = decodeURIComponent(fullyDecoded);
+      } catch {
+        // Stop if we hit invalid encoding
+        break;
+      }
+    }
+
     // Determine the full URL to fetch
     let fetchUrl: string;
-    if (decodedUrl.startsWith('/')) {
+    if (fullyDecoded.startsWith('/')) {
       // Relative path - prepend the Sonos API URL
-      fetchUrl = `${SONOS_API_URL}${decodedUrl}`;
+      fetchUrl = `${SONOS_API_URL}${fullyDecoded}`;
     } else {
       // Full URL - use as-is
-      fetchUrl = decodedUrl;
+      fetchUrl = fullyDecoded;
     }
 
     const response = await fetch(fetchUrl, {
